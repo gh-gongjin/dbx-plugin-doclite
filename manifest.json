@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/t8y2/dbx/main/plugins/manifest.schema.json",
+  "manifest_version": 1,
+  "id": "com.gongjin.doclite",
+  "name": "DocLite",
+  "version": "0.1.8",
+  "publisher": "gongjin",
+  "description": "Convert Word, PDF, PowerPoint, Excel, EPUB and more into clean Markdown and structured Document Model JSON. Local conversion with optional cloud OCR for scanned PDFs.",
+  "icon": "assets/plugin.svg",
+  "engines": {
+    "dbx": ">=0.6.31",
+    "host_api": ">=1.0.0"
+  },
+  "permissions": [
+    "host.events",
+    "host.storage"
+  ],
+  "entrypoints": {
+    "backend": {
+      "executable": "bin/windows-x64/dbx-plugin-doclite.exe",
+      "transport": "stdio-jsonl",
+      "protocol_versions": [
+        1
+      ]
+    },
+    "ui": {
+      "root": "ui",
+      "entry": "ui/index.html"
+    }
+  },
+  "contributions": [
+    {
+      "type": "workbench",
+      "id": "com.gongjin.doclite.workbench",
+      "label": "DocLite",
+      "description": "Document conversion workbench: pick or drop files, convert locally, preview Markdown and inspect the Document Model.",
+      "icon": "assets/plugin.svg"
+    }
+  ],
+  "localizations": {
+    "zh-CN": {
+      "name": "DocLite 文档转换",
+      "description": "把 Word、PDF、PPT、Excel、EPUB 等文档转换为干净的 Markdown 与结构化 JSON，默认在本机完成，扫描版 PDF 可选接入云端 OCR。",
+      "contributions": {
+        "com.gongjin.doclite.workbench": {
+          "label": "DocLite",
+          "description": "文档转换工作台：选择或拖入文件，本地转换，预览 Markdown 并查看文档结构。"
+        }
+      }
+    }
+  }
+}

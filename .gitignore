@@ -1,0 +1,11 @@
+dist/
+node_modules/
+_build/.tmp/
+_build/ocr-deps/
+_build/samples/
+_build/shots/
+bin/windows-x64/*.exe
+backend/vendor/*
+!backend/vendor/versions.json
+.dbx-dev-data/
+*.log
