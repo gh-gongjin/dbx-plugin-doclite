@@ -52,7 +52,7 @@ class Sidecar {
   constructor(command, args, extraEnv = {}) {
     this.child = spawn(command, args, {
       cwd: root,
-      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.8", ...extraEnv },
+      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.9", ...extraEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.stderr = "";

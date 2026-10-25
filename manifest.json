@@ -3,7 +3,7 @@
   "manifest_version": 1,
   "id": "com.gongjin.doclite",
   "name": "DocLite",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "publisher": "gongjin",
   "description": "Convert Word, PDF, PowerPoint, Excel, EPUB and more into clean Markdown and structured Document Model JSON. Local conversion with optional cloud OCR for scanned PDFs.",
   "icon": "assets/plugin.svg",
@@ -13,6 +13,7 @@
   },
   "permissions": [
     "host.events",
+    "host.binary",
     "host.storage"
   ],
   "entrypoints": {

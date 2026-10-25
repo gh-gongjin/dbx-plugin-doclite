@@ -56,6 +56,8 @@ export function createZip(outPath, entries, options = {}) {
       const method = useDeflate ? 8 : 0;
       const checksum = crc32(data);
       const localOffset = offset;
+      const mode = entry.mode ?? (/\.exe$/i.test(entry.name) ? 0o755 : 0o644);
+      const externalAttributes = (((0o100000 | mode) * 0x10000) >>> 0);
 
       const header = Buffer.alloc(30);
       header.writeUInt32LE(0x04034b50, 0);
@@ -73,7 +75,7 @@ export function createZip(outPath, entries, options = {}) {
       write(name);
       write(payload);
 
-      central.push({ name, method, checksum, compressedSize: payload.length, size: data.length, localOffset });
+      central.push({ name, method, checksum, compressedSize: payload.length, size: data.length, localOffset, externalAttributes });
     }
 
     const centralStart = offset;
@@ -94,7 +96,7 @@ export function createZip(outPath, entries, options = {}) {
       header.writeUInt16LE(0, 32);
       header.writeUInt16LE(0, 34);
       header.writeUInt16LE(0, 36);
-      header.writeUInt32LE(0, 38);
+      header.writeUInt32LE(entry.externalAttributes, 38);
       header.writeUInt32LE(entry.localOffset, 42);
       write(header);
       write(entry.name);

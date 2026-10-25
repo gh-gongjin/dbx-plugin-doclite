@@ -19,7 +19,7 @@ const {
 } = require("./ocr.cjs");
 
 const PLUGIN_ID = "com.gongjin.doclite";
-const PLUGIN_VERSION = "0.1.8";
+const PLUGIN_VERSION = "0.1.9";
 const ANYDOC_VERSION = "0.2.4";
 const PDF_INSPECTOR_VERSION = "1.17.0";
 

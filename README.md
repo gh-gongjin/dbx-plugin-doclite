@@ -91,7 +91,12 @@ node _build/package.mjs          # dist/dbx-doclite-<version>.dbxp
 ```
 
 `prepare-vendor.mjs` reads native modules from `DOCLITE_ROOT`
-(default `F:/ai-project-workspace/DocLite`).
+(default `F:/ai-project-workspace/DocLite`). The bundled runtime is Node.js
+v24.21.0 from the official `node-v24.21.0-win-x64.zip` release (zip sha256
+`158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541`);
+`backend/vendor/versions.json` records that version and the hash of the
+vendored `node.exe`. To rebuild reproducibly, unpack that release and point
+`NODE_EXE` at its `node.exe` before running the script.
 
 ## Install in DBX
 

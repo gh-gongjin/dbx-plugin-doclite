@@ -103,8 +103,12 @@ function readZipEntries(archive) {
     const extraLength = data.readUInt16LE(offset + 30);
     const commentLength = data.readUInt16LE(offset + 32);
     const localOffset = data.readUInt32LE(offset + 42);
+    const externalAttributes = data.readUInt32LE(offset + 38);
+    const mode = (externalAttributes >>> 16) & 0o777;
     const nameBytes = data.subarray(offset + 46, offset + 46 + nameLength);
     const name = new TextDecoder("utf-8", { fatal: true }).decode(nameBytes);
+    assert.ok(mode === 0o644 || mode === 0o755, `${name}: ZIP 权限位应为 0644/0755，实际 ${mode.toString(8)}`);
+    assert.equal(mode === 0o755, /\.exe$/i.test(name), `${name}: ZIP 权限位与可执行属性不符`);
     assert.equal(flags & 0x0001, 0, `${name}: 不允许加密条目`);
     assert.ok([0, 8].includes(method), `${name}: 不支持的压缩方式 ${method}`);
     assert.notEqual(compressedSize, 0xffffffff, `${name}: 不支持 ZIP64`);
@@ -124,7 +128,7 @@ function readZipEntries(archive) {
     const unpacked = method === 8 ? zlib.inflateRawSync(payload) : Buffer.from(payload);
     assert.equal(unpacked.length, size, `${name}: 解压后大小不符`);
     assert.equal(crc32(unpacked), checksum, `${name}: CRC32 不符`);
-    entries.push({ name, size, unpacked });
+    entries.push({ name, size, unpacked, mode });
     offset += 46 + nameLength + extraLength + commentLength;
   }
   assert.equal(offset, centralOffset + centralSize, "ZIP 中央目录长度不符");
@@ -458,6 +462,7 @@ async function main() {
   }
   assert.ok(unpackedBytes <= 1024 * 1024 * 1024, "解包后超过 1 GB");
   pass("ZIP 路径安全", `${entries.length} 个文件，无穿越/绝对路径/目录条目`);
+  pass("ZIP 权限位", `${entries.filter((entry) => entry.mode === 0o755).length} 个可执行 / ${entries.filter((entry) => entry.mode === 0o644).length} 个普通文件`);
   writeExtracted(entries);
   pass("ZIP 完整性", `${entries.length} 个条目 CRC32 与尺寸全部通过`);
   pass("解包后体积", `${(unpackedBytes / 1024 / 1024).toFixed(1)} MB`);
@@ -467,6 +472,7 @@ async function main() {
   pass("PE 架构", "launcher、目录选择器与内置 Node 均为 windows-x64");
 
   const vendorVersions = JSON.parse(fs.readFileSync(path.join(checkDir, "backend", "vendor", "versions.json"), "utf8"));
+  assert.equal(vendorVersions.node, "24.21.0");
   assert.equal(vendorVersions.pdfium, "3.0.0");
   assert.equal(vendorVersions.jpegJs, "0.4.4");
   for (const relative of [
@@ -534,6 +540,7 @@ async function main() {
   }
   assert.ok(manifest.permissions.includes("host.storage"));
   assert.ok(manifest.permissions.includes("host.events"));
+  assert.ok(manifest.permissions.includes("host.binary"));
   pass("权限", manifest.permissions.join(", "));
 
   assert.equal(manifest.entrypoints.backend.transport, "stdio-jsonl");
