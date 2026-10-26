@@ -66,6 +66,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0;
@@ -119,6 +120,24 @@
   .brand-sub { margin-top: 1px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
 
   .toolbar-spacer { flex: 1; }
+  .mode-switch {
+    display: inline-flex; align-items: center; gap: 1px;
+    margin-left: 4px; padding: 2px;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--hover);
+  }
+  .mode-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 24px; padding: 0 9px;
+    border: 0; border-radius: var(--radius-sm);
+    background: transparent; color: var(--muted);
+    font-size: 11.5px; white-space: nowrap;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .mode-btn .icon { width: 13px; height: 13px; }
+  .mode-btn:hover { color: var(--text); }
+  .mode-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+  html[data-theme="dark"] .mode-btn.active { box-shadow: none; background: var(--selected); }
   .toolbar-actions { display: flex; align-items: center; gap: 5px; }
   .privacy-chip {
     display: inline-flex; align-items: center; gap: 5px;
@@ -313,6 +332,69 @@
   }
   .queue-empty-icon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px dashed var(--border-strong); border-radius: 50%; margin-bottom: 2px; }
   .queue-empty-title { font-size: 11.5px; color: var(--text-2); }
+
+  /* data dictionary */
+  .dict-source { flex: none; padding: 9px 11px 8px; border-bottom: 1px solid var(--border-light); }
+  .dict-label { display: block; margin-bottom: 4px; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+  .dict-select {
+    width: 100%; height: 28px; padding: 0 7px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font-size: 11.5px;
+  }
+  .dict-select:disabled { opacity: 0.55; }
+  .dict-hint { margin-top: 5px; font-size: 10px; line-height: 1.5; color: var(--muted); }
+  .dict-databases { flex: none; max-height: 34%; overflow: auto; padding: 5px 6px; border-bottom: 1px solid var(--border-light); scrollbar-width: thin; }
+  .dict-filter-row { flex: none; padding: 7px 9px 5px; }
+  .dict-filter {
+    width: 100%; height: 26px; padding: 0 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font-size: 11px;
+  }
+  .dict-filter::placeholder { color: var(--muted); }
+  .dict-hidden-note { margin: 2px 5px 4px; }
+  .dict-tables { flex: 1; min-height: 0; overflow: auto; padding: 0 6px 8px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+  .dict-tables::-webkit-scrollbar, .dict-databases::-webkit-scrollbar { width: 6px; }
+  .dict-tables::-webkit-scrollbar-thumb, .dict-databases::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .dict-group { margin-bottom: 4px; }
+  .dict-group-title {
+    display: flex; align-items: center; gap: 5px;
+    min-height: 24px; padding: 0 5px;
+    font-size: 10.5px; font-weight: 600; color: var(--text-2);
+  }
+  .dict-group-tools { margin-left: auto; display: flex; align-items: center; gap: 1px; }
+  .dict-group-tools .text-btn { padding: 2px 4px; font-size: 10px; }
+  .dict-check {
+    display: flex; align-items: center; gap: 6px;
+    min-height: 26px; padding: 0 5px;
+    border-radius: var(--radius-sm); cursor: default;
+  }
+  .dict-check:hover { background: var(--hover); }
+  .dict-check input { width: 13px; height: 13px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
+  .dict-check input:disabled { cursor: default; opacity: 0.45; }
+  .dict-check > span:not(.dict-tag) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  .dict-table-name { flex: 1; }
+  .dict-table-comment { flex: 0 1 42%; text-align: right; color: var(--muted); font-size: 10px !important; }
+  .dict-tag {
+    flex: none; display: inline-flex; align-items: center;
+    height: 15px; padding: 0 5px; border-radius: 8px;
+    background: var(--hover); color: var(--muted);
+    font-family: var(--font-mono); font-size: 9px; white-space: nowrap;
+  }
+  .dict-check .dict-tag { margin-left: auto; }
+  .dict-empty, .dict-loading {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 10px; color: var(--muted); font-size: 10.5px; line-height: 1.5;
+  }
+  .dict-loading .spinner { width: 11px; height: 11px; }
+  #dictAlert:empty { display: none; }
+  .dict-alert {
+    flex: none; padding: 7px 14px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--info-bg); color: var(--info);
+    font-size: 11px; line-height: 1.55;
+  }
+  .dict-alert.danger { background: var(--danger-bg); color: var(--danger); }
+  .ftype.db { background: var(--info-bg); color: var(--info); border-color: transparent; }
 
   /* preview */
   .preview { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
@@ -790,6 +872,7 @@
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16"/><path d="M3 21v-5h5"/></symbol>
   <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="m12 3 1.8 4.9L19 9.7l-5.2 1.8L12 16.4l-1.8-4.9L5 9.7l5.2-1.8L12 3z"/><path d="M19 15v4M17 17h4"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></symbol>
 </svg>
 
 <div class="app">
@@ -798,8 +881,12 @@
       <div class="brand-mark"><svg class="icon"><use href="#i-doc"/></svg></div>
       <div class="brand-text">
         <div class="brand-title">DocLite</div>
-        <div class="brand-sub">文档转 Markdown · 本地优先</div>
+        <div class="brand-sub">文档与数据字典 · 本地优先</div>
       </div>
+    </div>
+    <div class="mode-switch" role="tablist" aria-label="工作模式">
+      <button class="mode-btn active" data-mode="convert" role="tab" aria-selected="true" type="button"><svg class="icon"><use href="#i-doc"/></svg>文档转换</button>
+      <button class="mode-btn" data-mode="dictionary" role="tab" aria-selected="false" type="button"><svg class="icon"><use href="#i-table"/></svg>数据字典</button>
     </div>
     <div class="toolbar-spacer"></div>
     <div class="toolbar-actions">
@@ -824,7 +911,7 @@
     <button class="btn strip-cancel" id="cancelBtn" type="button">取消</button>
   </div>
 
-  <main class="workspace">
+  <main class="workspace" id="convertWorkspace">
     <aside class="queue" aria-label="文件队列">
       <div class="queue-head">
         <label class="queue-check" title="全选待转换文件"><input type="checkbox" id="checkAll" aria-label="全选待转换文件"></label>
@@ -866,6 +953,48 @@
         <span class="tabs-meta" id="tabsMeta"></span>
       </div>
       <div class="preview-body" id="previewBody"></div>
+    </section>
+  </main>
+
+  <main class="workspace" id="dictWorkspace" hidden>
+    <aside class="queue dict-sidebar" aria-label="数据字典范围">
+      <div class="queue-head">
+        <span class="queue-title">数据源</span>
+        <div class="queue-tools">
+          <button class="icon-btn" id="dictRefresh" type="button" title="刷新连接"><svg class="icon"><use href="#i-refresh"/></svg></button>
+        </div>
+      </div>
+      <div class="dict-source">
+        <label class="dict-label" for="dictConnection">连接</label>
+        <select class="dict-select" id="dictConnection" aria-label="选择数据库连接"></select>
+        <div class="dict-hint" id="dictHint">只支持 MySQL / PostgreSQL / SQLite 及其兼容库。</div>
+      </div>
+      <div class="dict-filter-row" id="dictDbFilterRow" hidden>
+        <input class="dict-filter" id="dictDbFilter" type="search" placeholder="筛选库名" aria-label="筛选库">
+      </div>
+      <div class="dict-databases" id="dictDatabases"></div>
+      <div class="dict-filter-row">
+        <input class="dict-filter" id="dictFilter" type="search" placeholder="筛选表名或注释" aria-label="筛选表">
+      </div>
+      <div class="dict-tables" id="dictTables"></div>
+      <div class="queue-foot">
+        <span id="dictFootText">未选择表</span>
+        <button class="text-btn" id="dictClearSel" type="button" disabled>清空选择</button>
+      </div>
+    </aside>
+
+    <section class="preview" aria-label="数据字典预览">
+      <div class="preview-head">
+        <div class="identity" id="dictIdentity"></div>
+        <div class="preview-actions">
+          <button class="btn btn-quiet" id="dictCopyBtn" type="button" title="复制 Markdown" disabled><svg class="icon"><use href="#i-copy"/></svg><span>复制</span></button>
+          <button class="btn btn-quiet" id="dictSaveBtn" type="button" title="保存为 Markdown" disabled><svg class="icon"><use href="#i-save"/></svg><span>保存 Markdown</span></button>
+          <button class="btn btn-quiet" id="dictSaveWordBtn" type="button" title="保存为 Word 文档" disabled><svg class="icon"><use href="#i-save"/></svg><span>保存 Word</span></button>
+          <button class="btn btn-primary" id="dictGenerateBtn" type="button" disabled>生成数据字典</button>
+        </div>
+      </div>
+      <div id="dictAlert"></div>
+      <div class="preview-body" id="dictBody"></div>
     </section>
   </main>
 </div>
@@ -1043,6 +1172,7 @@
   // Host bridge rejects request params above 2 MiB; base64 inflates raw bytes by 4/3.
   const UPLOAD_CHUNK_BYTES = 1024 * 1024;
   const READ_CHUNK_BYTES = 4 * 1024 * 1024;
+  const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   const CONVERSION_TIMEOUT_MS = 10 * 60 * 1000;
   const PICK_TIMEOUT_MS = 5 * 60 * 1000;
   const UNDO_WINDOW_MS = 10000;
@@ -1081,10 +1211,24 @@
     "ocrNetwork", "ocrMalformed", "ocrEngine", "ocrPageLimit", "ocrFailed"
   ]);
 
+  // Host API 1.4 ships host.getConnections + host.queryData. Only these
+  // dialects have catalog queries in the dictionary mode; everything else is
+  // shown as unsupported instead of guessing at its metadata tables.
+  const DICTIONARY_FAMILIES = {
+    mysql: "mysql", gbase: "mysql", doris: "mysql", starrocks: "mysql", goldendb: "mysql",
+    postgres: "postgres", gaussdb: "postgres", opengauss: "postgres", kingbase: "postgres",
+    highgo: "postgres", vastbase: "postgres", uxdb: "postgres", gbase8c: "postgres", kwdb: "postgres",
+    sqlite: "sqlite"
+  };
+  const DICTIONARY_QUERY_ROWS = 5000;
+  const DICTIONARY_TABLE_CHUNK = 40;
+
+
   const state = {
     files: [],
     selectedId: null,
     tab: "preview",
+    mode: "convert",
     theme: "light",
     converting: false,
     cancelRequested: false,
@@ -1104,7 +1248,25 @@
     lastInputDir: "",
     ocr: { ...DEFAULT_OCR_STATE, mineru: { ...DEFAULT_OCR_STATE.mineru }, baidu: { ...DEFAULT_OCR_STATE.baidu } },
     ocrTesting: false,
-    ocrSaving: false
+    ocrSaving: false,
+    dictionary: {
+      hostReady: null,
+      loadedConnections: false,
+      loadingConnections: false,
+      connections: [],
+      connectionId: "",
+      databases: [],
+      loadingDatabases: false,
+      dbFilter: "",
+      filter: "",
+      generating: false,
+      savingWord: false,
+      progress: "",
+      markdown: "",
+      generatedLabel: "",
+      error: "",
+      notice: ""
+    }
   };
 
   const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (ch) => ({
@@ -1242,6 +1404,7 @@
     renderPreview();
     renderSettings();
     renderStrip();
+    renderDictionary();
   }
 
   function renderToolbar() {
@@ -2259,12 +2422,24 @@
     return bytes;
   }
 
-  async function readOutput(jobId, kind) {
+  function encodeBase64(bytes) {
+    if (typeof host.encodeBase64 === "function") {
+      try { return host.encodeBase64(bytes); } catch { /* fall through */ }
+    }
+    let binary = "";
+    const step = 0x8000;
+    for (let index = 0; index < bytes.length; index += step) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(index, index + step));
+    }
+    return btoa(binary);
+  }
+
+  async function readBinary(method, params) {
     const parts = [];
     let offset = 0;
     let total = 0;
     for (let guard = 0; guard < 8192; guard += 1) {
-      const chunk = await host.invoke("doc/readOutput", { jobId, kind, offset, length: READ_CHUNK_BYTES }, { timeoutMs: 30000 });
+      const chunk = await host.invoke(method, { ...params, offset, length: READ_CHUNK_BYTES }, { timeoutMs: 30000 });
       if (!chunk || typeof chunk.dataBase64 !== "string") throw new Error("读取输出失败。");
       const bytes = decodeBase64(chunk.dataBase64);
       parts.push(bytes);
@@ -2272,14 +2447,18 @@
       offset = Number(chunk.offset) + Number(chunk.length);
       if (chunk.eof || !chunk.length) break;
     }
-    if (!parts.length) return "";
     const merged = new Uint8Array(total);
     let at = 0;
     for (const part of parts) {
       merged.set(part, at);
       at += part.length;
     }
-    return new TextDecoder("utf-8").decode(merged);
+    return merged;
+  }
+
+  async function readOutput(jobId, kind) {
+    const bytes = await readBinary("doc/readOutput", { jobId, kind });
+    return bytes.length ? new TextDecoder("utf-8").decode(bytes) : "";
   }
 
   async function loadOutputs(file) {
@@ -2306,9 +2485,8 @@
     }
   }
 
-  async function saveText(name, contentType, text) {
+  async function saveBytes(name, contentType, bytes) {
     if (!host.capabilities?.fileTransfer?.beginSave) throw new Error("当前宿主不支持保存文件。");
-    const bytes = new TextEncoder().encode(text);
     const target = await host.fileTransfer.beginSave({ name, contentType, size: bytes.length });
     if (!target) return false;
     try {
@@ -2325,6 +2503,10 @@
       try { await host.fileTransfer.cancel(target.handleId); } catch { /* best effort */ }
       throw error;
     }
+  }
+
+  async function saveText(name, contentType, text) {
+    return saveBytes(name, contentType, new TextEncoder().encode(text));
   }
 
   async function saveOutputsAsk(file) {
@@ -2833,6 +3015,816 @@
     });
   }
 
+  // ---------------------------------------------------------------- dictionary
+  function dictionaryReady() {
+    return Boolean(host.capabilities?.connectionsApi && host.capabilities?.dataApi);
+  }
+
+  function dictionaryConnection() {
+    return state.dictionary.connections.find((row) => row.id === state.dictionary.connectionId) || null;
+  }
+
+  function dictionaryFamily(connection) {
+    return DICTIONARY_FAMILIES[String(connection?.dbType || "").toLowerCase()] || "";
+  }
+
+  function dictionaryErrorText(error) {
+    const message = errorText(error);
+    if (message.includes("PLUGIN_DATA_ACCESS_NOT_GRANTED")) {
+      return "未获得只读授权：再次生成会在 DBX 中重新请求授权。";
+    }
+    if (message.includes("Connection is not open")) {
+      return "连接未打开，请先在 DBX 中连接该数据库。";
+    }
+    if (message.includes("not available for")) {
+      return "DBX 不支持在这类连接上执行只读查询。";
+    }
+    return message;
+  }
+
+  function dictionarySqlLiteral(value) {
+    return `'${String(value).replace(/'/g, "''")}'`;
+  }
+
+  function dictionaryAliasRow(result, row) {
+    const mapped = {};
+    const columns = Array.isArray(result?.columns) ? result.columns : [];
+    columns.forEach((column, index) => { mapped[column.name] = row[index]; });
+    return mapped;
+  }
+
+  async function runDictionaryQuery(connection, request) {
+    const payload = {
+      connectionId: connection.id,
+      sql: request.sql,
+      maxRows: request.maxRows || DICTIONARY_QUERY_ROWS
+    };
+    if (request.database) payload.database = request.database;
+    if (request.schema) payload.schema = request.schema;
+    const result = await host.queryData(payload);
+    return {
+      columns: Array.isArray(result?.columns) ? result.columns : [],
+      rows: Array.isArray(result?.rows) ? result.rows : [],
+      truncated: Boolean(result?.truncated)
+    };
+  }
+
+  function dictionaryDatabasesSql(family) {
+    if (family === "mysql") {
+      return "SELECT schema_name AS name FROM information_schema.schemata WHERE schema_name NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys', '__internal_schema') ORDER BY schema_name";
+    }
+    if (family === "postgres") {
+      return "SELECT datname AS name FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname";
+    }
+    return "";
+  }
+
+  function dictionaryTablesSql(family, database) {
+    if (family === "mysql") {
+      return `SELECT table_name AS name, table_comment AS comment FROM information_schema.tables WHERE table_schema = ${dictionarySqlLiteral(database)} AND table_type <> 'VIEW' ORDER BY table_name`;
+    }
+    if (family === "postgres") {
+      return "SELECT n.nspname AS schema_name, c.relname AS name, obj_description(c.oid, 'pg_class') AS comment FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp%' ORDER BY n.nspname, c.relname";
+    }
+    return "SELECT name, '' AS comment FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
+  }
+
+  function dictionaryMysqlQueries(database, tables) {
+    const names = tables.map((table) => dictionarySqlLiteral(table.name)).join(", ");
+    const schema = dictionarySqlLiteral(database);
+    return [
+      {
+        kind: "columns",
+        sql: `SELECT c.table_name AS table_name, c.column_name AS column_name, c.column_type AS data_type, c.is_nullable AS is_nullable, c.column_default AS column_default, c.column_comment AS column_comment, c.column_key AS column_key, c.extra AS extra, c.ordinal_position AS ordinal_position, t.table_comment AS table_comment FROM information_schema.columns c JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name WHERE c.table_schema = ${schema} AND c.table_name IN (${names}) ORDER BY c.table_name, c.ordinal_position`
+      },
+      {
+        kind: "indexes",
+        sql: `SELECT table_name, index_name, non_unique, seq_in_index, column_name, index_type FROM information_schema.statistics WHERE table_schema = ${schema} AND table_name IN (${names}) ORDER BY table_name, index_name, seq_in_index`
+      },
+      {
+        kind: "foreignKeys",
+        sql: `SELECT table_name, constraint_name, column_name, ordinal_position, referenced_table_name, referenced_column_name FROM information_schema.key_column_usage WHERE table_schema = ${schema} AND table_name IN (${names}) AND referenced_table_name IS NOT NULL ORDER BY table_name, constraint_name, ordinal_position`
+      }
+    ];
+  }
+
+  function dictionaryPostgresScope(tables, tableAlias, namespaceAlias) {
+    const groups = new Map();
+    for (const table of tables) {
+      const schema = table.schema || "public";
+      if (!groups.has(schema)) groups.set(schema, []);
+      groups.get(schema).push(dictionarySqlLiteral(table.name));
+    }
+    return [...groups]
+      .map(([schema, names]) => `(${namespaceAlias}.nspname = ${dictionarySqlLiteral(schema)} AND ${tableAlias}.relname IN (${names.join(", ")}))`)
+      .join(" OR ");
+  }
+
+  function dictionaryPostgresQueries(tables) {
+    const columnScope = dictionaryPostgresScope(tables, "c", "n");
+    const indexScope = dictionaryPostgresScope(tables, "t", "n");
+    const keyScope = dictionaryPostgresScope(tables, "src", "n");
+    return [
+      {
+        kind: "columns",
+        sql: `SELECT n.nspname AS schema_name, c.relname AS table_name, a.attname AS column_name, format_type(a.atttypid, a.atttypmod) AS data_type, NOT a.attnotnull AS is_nullable, pg_get_expr(d.adbin, d.adrelid) AS column_default, col_description(c.oid, a.attnum) AS column_comment, obj_description(c.oid, 'pg_class') AS table_comment, a.attnum AS ordinal_position FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = a.attnum WHERE c.relkind IN ('r', 'p') AND (${columnScope}) ORDER BY n.nspname, c.relname, a.attnum`
+      },
+      {
+        kind: "indexes",
+        // indkey is int2vector: cast before unnest so this also works on older
+        // PostgreSQL forks that lack array_position(int2vector, ...).
+        sql: `SELECT n.nspname AS schema_name, t.relname AS table_name, i.relname AS index_name, ix.indisunique AS is_unique, ix.indisprimary AS is_primary, a.attname AS column_name, keys.ord AS ordinal_position FROM pg_index ix JOIN pg_class t ON t.oid = ix.indrelid JOIN pg_class i ON i.oid = ix.indexrelid JOIN pg_namespace n ON n.oid = t.relnamespace JOIN LATERAL unnest(ix.indkey::smallint[]) WITH ORDINALITY AS keys(attnum, ord) ON true JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = keys.attnum WHERE (${indexScope}) ORDER BY n.nspname, t.relname, i.relname, keys.ord`
+      },
+      {
+        kind: "foreignKeys",
+        sql: `SELECT n.nspname AS schema_name, src.relname AS table_name, con.conname AS constraint_name, src_a.attname AS column_name, tgt_n.nspname AS ref_schema, tgt.relname AS ref_table, tgt_a.attname AS ref_column, keys.ord AS ordinal_position FROM pg_constraint con JOIN pg_class src ON src.oid = con.conrelid JOIN pg_namespace n ON n.oid = src.relnamespace JOIN pg_class tgt ON tgt.oid = con.confrelid JOIN pg_namespace tgt_n ON tgt_n.oid = tgt.relnamespace JOIN LATERAL unnest(con.conkey, con.confkey) WITH ORDINALITY AS keys(src_attnum, tgt_attnum, ord) ON true JOIN pg_attribute src_a ON src_a.attrelid = con.conrelid AND src_a.attnum = keys.src_attnum JOIN pg_attribute tgt_a ON tgt_a.attrelid = con.confrelid AND tgt_a.attnum = keys.tgt_attnum WHERE con.contype = 'f' AND (${keyScope}) ORDER BY n.nspname, src.relname, con.conname, keys.ord`
+      }
+    ];
+  }
+
+  function dictionarySqliteQueries(tables) {
+    const queries = [];
+    for (const table of tables) {
+      const name = dictionarySqlLiteral(table.name);
+      queries.push(
+        { kind: "columns", table: table.name, sql: `SELECT name AS column_name, type AS data_type, "notnull" AS not_null, dflt_value AS column_default, pk AS primary_key, cid AS ordinal_position FROM pragma_table_info(${name}) ORDER BY cid` },
+        { kind: "indexes", table: table.name, sql: `SELECT name AS index_name, "unique" AS is_unique, origin AS origin FROM pragma_index_list(${name}) ORDER BY name` },
+        { kind: "foreignKeys", table: table.name, sql: `SELECT id, seq, "table" AS ref_table, "from" AS column_name, "to" AS ref_column FROM pragma_foreign_key_list(${name}) ORDER BY id, seq` }
+      );
+    }
+    return queries;
+  }
+
+  function resetDictionaryFilters() {
+    state.dictionary.dbFilter = "";
+    state.dictionary.filter = "";
+    const dbFilter = $("#dictDbFilter");
+    if (dbFilter) dbFilter.value = "";
+    const filter = $("#dictFilter");
+    if (filter) filter.value = "";
+  }
+
+  async function loadDictionaryConnections() {
+    const dict = state.dictionary;
+    dict.loadingConnections = true;
+    dict.error = "";
+    renderDictionary();
+    try {
+      // capabilities only fill in after the host's init message; switching
+      // modes during startup must not be mistaken for an old DBX build.
+      try { await host.ready; } catch { /* requests surface their own errors */ }
+      dict.hostReady = dictionaryReady();
+      if (!dict.hostReady) {
+        dict.connections = [];
+        dict.loadedConnections = true;
+        return;
+      }
+      const list = typeof host.getConnections === "function"
+        ? await host.getConnections()
+        : (host.connections?.getAll ? await host.connections.getAll() : []);
+      dict.connections = (Array.isArray(list) ? list : []).map((row) => ({
+        id: String(row?.id || ""),
+        name: String(row?.name || row?.id || ""),
+        dbType: String(row?.dbType || ""),
+        connected: Boolean(row?.connected ?? row?.isConnected),
+        database: typeof row?.database === "string" ? row.database : "",
+        family: dictionaryFamily(row)
+      })).filter((row) => row.id);
+      dict.loadedConnections = true;
+      if (!dict.connections.some((row) => row.id === dict.connectionId)) {
+        dict.connectionId = "";
+        dict.databases = [];
+        dict.markdown = "";
+        dict.generatedLabel = "";
+        resetDictionaryFilters();
+      }
+    } catch (error) {
+      dict.error = dictionaryErrorText(error);
+    } finally {
+      dict.loadingConnections = false;
+      renderDictionary();
+    }
+  }
+
+  async function loadDictionaryDatabases() {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    dict.databases = [];
+    dict.markdown = "";
+    dict.generatedLabel = "";
+    dict.error = "";
+    dict.notice = "";
+    if (!connection || !connection.family) {
+      renderDictionary();
+      return;
+    }
+    dict.loadingDatabases = true;
+    renderDictionary();
+    try {
+      if (connection.family === "sqlite") {
+        dict.databases = [{ name: connection.database || "main", checked: true, loaded: false, loading: false, tables: [] }];
+      } else {
+        const result = await runDictionaryQuery(connection, { sql: dictionaryDatabasesSql(connection.family), maxRows: 1000 });
+        dict.databases = result.rows
+          .map((row) => String(row[0] ?? ""))
+          .filter(Boolean)
+          .map((name) => ({ name, checked: false, loaded: false, loading: false, tables: [] }));
+        if (result.truncated) dict.notice = "库列表超过行数上限，仅显示前 1000 个。";
+      }
+      if (dict.databases.length === 1) {
+        dict.databases[0].checked = true;
+        await loadDictionaryTables(dict.databases[0]);
+      }
+    } catch (error) {
+      dict.error = dictionaryErrorText(error);
+    } finally {
+      dict.loadingDatabases = false;
+      renderDictionary();
+    }
+  }
+
+  async function loadDictionaryTables(database) {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    if (!connection || database.loading) return;
+    database.loading = true;
+    dict.error = "";
+    renderDictionary();
+    try {
+      const result = await runDictionaryQuery(connection, {
+        database: connection.family === "sqlite" ? undefined : database.name,
+        sql: dictionaryTablesSql(connection.family, database.name)
+      });
+      database.tables = result.rows.map((row) => {
+        const entry = dictionaryAliasRow(result, row);
+        return {
+          schema: connection.family === "postgres"
+            ? String(entry.schema_name || "public")
+            : (connection.family === "sqlite" ? "main" : database.name),
+          name: String(entry.name || ""),
+          comment: entry.comment ? String(entry.comment) : "",
+          checked: true
+        };
+      }).filter((table) => table.name).sort((left, right) => {
+        const a = `${left.schema}.${left.name}`;
+        const b = `${right.schema}.${right.name}`;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+      database.loaded = true;
+      if (result.truncated) dict.notice = "表列表超过行数上限，仅显示前 5000 张表。";
+    } catch (error) {
+      database.checked = false;
+      dict.error = dictionaryErrorText(error);
+    } finally {
+      database.loading = false;
+      renderDictionary();
+    }
+  }
+
+  async function toggleDictionaryDatabase(name, checked) {
+    const database = state.dictionary.databases.find((row) => row.name === name);
+    if (!database) return;
+    database.checked = checked;
+    if (checked && !database.loaded) await loadDictionaryTables(database);
+    else renderDictionary();
+  }
+
+  function selectedDictionaryTables() {
+    return state.dictionary.databases
+      .filter((database) => database.checked)
+      .map((database) => ({ database, tables: database.tables.filter((table) => table.checked) }))
+      .filter((entry) => entry.tables.length);
+  }
+
+  function selectedDictionaryTableCount() {
+    return selectedDictionaryTables().reduce((total, entry) => total + entry.tables.length, 0);
+  }
+
+  function dictionaryTableSeed(database, tables, family) {
+    return tables.map((table) => ({
+      schema: table.schema || (family === "postgres" ? "public" : database),
+      name: table.name,
+      comment: table.comment || "",
+      columns: [],
+      indexes: [],
+      foreignKeys: []
+    }));
+  }
+
+  function applyDictionaryRows(family, database, query, result, resolve, fallbackTable) {
+    const tableOf = (entry) => {
+      if (family === "postgres") return resolve(String(entry.schema_name || ""), String(entry.table_name || ""));
+      if (family === "sqlite") return fallbackTable;
+      return resolve(database, String(entry.table_name || ""));
+    };
+    for (const row of result.rows) {
+      const entry = dictionaryAliasRow(result, row);
+      const table = tableOf(entry);
+      if (!table) continue;
+      if (query.kind === "columns") {
+        if (entry.table_comment) table.comment = String(entry.table_comment);
+        table.columns.push({
+          name: String(entry.column_name || ""),
+          dataType: String(entry.data_type || ""),
+          nullable: entry.is_nullable === true || entry.is_nullable === "YES" || Number(entry.not_null) === 0,
+          defaultValue: entry.column_default === null || entry.column_default === undefined ? "" : String(entry.column_default),
+          comment: entry.column_comment ? String(entry.column_comment) : "",
+          primary: Number(entry.primary_key) > 0 || String(entry.column_key || "").toUpperCase() === "PRI",
+          position: Number(entry.ordinal_position) || 0
+        });
+      } else if (query.kind === "indexes") {
+        const indexName = String(entry.index_name || "");
+        if (!indexName) continue;
+        let index = table.indexes.find((item) => item.name === indexName);
+        if (!index) {
+          index = {
+            name: indexName,
+            unique: entry.is_unique === true || Number(entry.is_unique) === 1 || Number(entry.non_unique) === 0,
+            primary: entry.is_primary === true || indexName.toUpperCase() === "PRIMARY" || String(entry.origin || "") === "pk",
+            columns: []
+          };
+          table.indexes.push(index);
+        }
+        const column = String(entry.column_name || "");
+        if (column && !index.columns.includes(column)) index.columns.push(column);
+      } else if (query.kind === "foreignKeys") {
+        const constraint = family === "sqlite"
+          ? `${table.name}_fk_${String(entry.id ?? "")}`
+          : String(entry.constraint_name ?? entry.id ?? "");
+        let key = table.foreignKeys.find((item) => item.name === constraint);
+        if (!key) {
+          key = {
+            name: constraint,
+            columns: [],
+            refSchema: entry.ref_schema ? String(entry.ref_schema) : (family === "mysql" ? database : ""),
+            refTable: String(entry.ref_table || entry.referenced_table_name || ""),
+            refColumns: []
+          };
+          table.foreignKeys.push(key);
+        }
+        const column = String(entry.column_name || "");
+        if (column && !key.columns.includes(column)) key.columns.push(column);
+        const refColumn = String(entry.ref_column || entry.referenced_column_name || "");
+        if (refColumn && !key.refColumns.includes(refColumn)) key.refColumns.push(refColumn);
+      }
+    }
+  }
+
+  async function loadDictionarySqliteIndexColumns(connection, model, warnings) {
+    let failed = false;
+    for (const table of model) {
+      for (const index of table.indexes) {
+        try {
+          const result = await runDictionaryQuery(connection, {
+            sql: `SELECT seqno, cid, name FROM pragma_index_info(${dictionarySqlLiteral(index.name)}) ORDER BY seqno`
+          });
+          index.columns = result.rows.map((row) => String(row[2] ?? "")).filter(Boolean);
+        } catch (error) {
+          const message = errorText(error);
+          if (message.includes("PLUGIN_DATA_ACCESS_NOT_GRANTED") || message.includes("Connection is not open")) throw error;
+          failed = true;
+        }
+      }
+    }
+    if (failed) warnings.push(`部分索引列信息读取失败（${connection.dbType}），已跳过。`);
+  }
+
+  async function loadDictionaryDetails(connection, database, tables, warnings) {
+    const family = connection.family;
+    const model = dictionaryTableSeed(database.name, tables, family);
+    const byKey = new Map(model.map((table) => [`${table.schema}\u0000${table.name}`, table]));
+    const resolve = (schema, name) => byKey.get(`${schema || ""}\u0000${name}`) || null;
+    const queries = [];
+    if (family === "mysql" || family === "postgres") {
+      for (let index = 0; index < tables.length; index += DICTIONARY_TABLE_CHUNK) {
+        const chunk = tables.slice(index, index + DICTIONARY_TABLE_CHUNK);
+        queries.push(...(family === "mysql" ? dictionaryMysqlQueries(database.name, chunk) : dictionaryPostgresQueries(chunk)));
+      }
+    } else {
+      queries.push(...dictionarySqliteQueries(tables));
+    }
+
+    const fatal = new Set();
+    const failedKinds = new Set();
+    let step = 0;
+    for (const query of queries) {
+      step += 1;
+      state.dictionary.progress = `${step}/${queries.length}`;
+      renderDictionary();
+      try {
+        const result = await runDictionaryQuery(connection, {
+          database: family === "sqlite" ? undefined : database.name,
+          sql: query.sql
+        });
+        if (result.truncated) warnings.push("部分查询结果超过行数上限，数据字典可能不完整。");
+        const fallback = family === "sqlite" ? model.find((table) => table.name === query.table) : null;
+        applyDictionaryRows(family, database.name, query, result, resolve, fallback);
+      } catch (error) {
+        const message = errorText(error);
+        if (message.includes("PLUGIN_DATA_ACCESS_NOT_GRANTED") || message.includes("Connection is not open") || message.includes("not available for")) {
+          fatal.add(message);
+          break;
+        }
+        // Compatible databases often lack parts of information_schema; keep
+        // whatever the other queries returned instead of failing the export.
+        failedKinds.add(query.kind);
+      }
+    }
+    if (fatal.size) throw new Error([...fatal][0]);
+    const labels = { columns: "字段", indexes: "索引", foreignKeys: "外键" };
+    for (const kind of failedKinds) {
+      warnings.push(`${labels[kind] || kind}信息读取失败（${connection.dbType}），已跳过。`);
+    }
+    if (family === "sqlite" && !failedKinds.has("indexes")) await loadDictionarySqliteIndexColumns(connection, model, warnings);
+    return model;
+  }
+
+  function dictionaryCountColumns(model) {
+    return model.databases.reduce((total, database) => (
+      total + database.tables.reduce((sum, table) => sum + table.columns.length, 0)
+    ), 0);
+  }
+
+  async function generateDictionary() {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    const selection = selectedDictionaryTables();
+    if (!connection || !selection.length || dict.generating) return;
+    dict.generating = true;
+    dict.error = "";
+    dict.notice = "";
+    dict.progress = "";
+    dict.markdown = "";
+    dict.generatedLabel = "";
+    renderDictionary();
+    const warnings = [];
+    const model = { connection, generatedAt: new Date(), databases: [] };
+    try {
+      for (const entry of selection) {
+        const tables = await loadDictionaryDetails(connection, entry.database, entry.tables, warnings);
+        model.databases.push({ name: entry.database.name, tables });
+      }
+      dict.markdown = buildDictionaryMarkdown(model, warnings);
+      const tableCount = model.databases.reduce((total, database) => total + database.tables.length, 0);
+      dict.generatedLabel = `${tableCount} 张表 · ${dictionaryCountColumns(model)} 个字段`;
+      dict.notice = warnings.length ? "部分结果被行数上限截断，数据字典可能不完整。" : "";
+    } catch (error) {
+      dict.error = dictionaryErrorText(error);
+    } finally {
+      dict.generating = false;
+      dict.progress = "";
+      renderDictionary();
+    }
+  }
+
+  function dictionaryCell(value) {
+    return String(value ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>").trim();
+  }
+
+  function dictionaryTableTitle(family, table) {
+    return family === "postgres" && table.schema && table.schema !== "public"
+      ? `${table.schema}.${table.name}`
+      : table.name;
+  }
+
+  function dictionaryKeyLabel(table, column) {
+    const primary = table.indexes.find((index) => index.primary);
+    if (column.primary || (primary && primary.columns.includes(column.name))) return "PK";
+    const unique = table.indexes.find((index) => (
+      index.unique && !index.primary && index.columns.length === 1 && index.columns[0] === column.name
+    ));
+    return unique ? "UK" : "";
+  }
+
+  function buildDictionaryMarkdown(model, warnings) {
+    const connection = model.connection;
+    const stamp = model.generatedAt;
+    const pad = (value) => String(value).padStart(2, "0");
+    const lines = [];
+    lines.push(`# 数据库数据字典：${connection.name}`);
+    lines.push("");
+    lines.push(`- 连接：\`${connection.name}\`（${connection.dbType || "unknown"}）`);
+    lines.push(`- 生成时间：${stamp.getFullYear()}-${pad(stamp.getMonth() + 1)}-${pad(stamp.getDate())} ${pad(stamp.getHours())}:${pad(stamp.getMinutes())}`);
+    lines.push(`- 范围：${model.databases.map((database) => `\`${database.name}\`（${database.tables.length} 张表）`).join("、")}`);
+    lines.push("");
+    for (const warning of [...new Set(warnings)]) lines.push(`> ${warning}`);
+    if (warnings.length) lines.push("");
+
+    for (const database of model.databases) {
+      lines.push(`## 库 \`${database.name}\``);
+      lines.push("");
+      if (!database.tables.length) {
+        lines.push("_没有可导出的表。_");
+        lines.push("");
+        continue;
+      }
+      lines.push(`共 ${database.tables.length} 张表。`);
+      lines.push("");
+      for (const table of database.tables) {
+        lines.push(`### ${dictionaryTableTitle(connection.family, table)}${table.comment ? ` — ${table.comment}` : ""}`);
+        lines.push("");
+        lines.push("| # | 字段 | 类型 | 可空 | 默认值 | 键 | 说明 |");
+        lines.push("| ---: | --- | --- | :---: | --- | :---: | --- |");
+        if (table.columns.length) {
+          table.columns.forEach((column, index) => {
+            lines.push(`| ${index + 1} | ${dictionaryCell(column.name)} | ${dictionaryCell(column.dataType)} | ${column.nullable ? "是" : "否"} | ${dictionaryCell(column.defaultValue)} | ${dictionaryKeyLabel(table, column)} | ${dictionaryCell(column.comment)} |`);
+          });
+        } else {
+          lines.push("|  | _没有字段信息_ |  |  |  |  |  |");
+        }
+        lines.push("");
+        if (table.indexes.length) {
+          lines.push("**索引**");
+          lines.push("");
+          lines.push("| 索引 | 唯一 | 列 |");
+          lines.push("| --- | :---: | --- |");
+          for (const index of table.indexes) {
+            lines.push(`| ${dictionaryCell(index.name)} | ${index.unique ? "是" : "否"} | ${dictionaryCell(index.columns.join(", ") || "（表达式）")} |`);
+          }
+          lines.push("");
+        }
+        if (table.foreignKeys.length) {
+          lines.push("**外键**");
+          lines.push("");
+          lines.push("| 约束 | 字段 | 引用 |");
+          lines.push("| --- | --- | --- |");
+          for (const key of table.foreignKeys) {
+            const prefix = key.refSchema && key.refSchema !== database.name ? `${key.refSchema}.` : "";
+            const reference = key.refTable ? `${prefix}${key.refTable}(${key.refColumns.join(", ")})` : "";
+            lines.push(`| ${dictionaryCell(key.name)} | ${dictionaryCell(key.columns.join(", "))} | ${dictionaryCell(reference)} |`);
+          }
+          lines.push("");
+        }
+      }
+    }
+    return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
+  }
+
+  function dictionaryEmptyState() {
+    const dict = state.dictionary;
+    if (dict.hostReady === false) {
+      return `
+        <div class="state-panel warn">
+          <div class="state-title">当前 DBX 不支持数据字典</div>
+          <div class="state-desc">数据字典需要 Host API 1.4（DBX 0.6.23 及以上）。文件转换不受影响，可切回“文档转换”。</div>
+        </div>`;
+    }
+    if (dict.loadingConnections) {
+      return '<div class="state-panel"><span class="spinner"></span><div class="state-title">正在读取连接</div></div>';
+    }
+    if (!dict.connections.length) {
+      return `
+        <div class="state-panel">
+          <div class="state-title">没有可用的数据库连接</div>
+          <div class="state-desc">请先在 DBX 中保存并连接一个 MySQL、PostgreSQL 或 SQLite 连接，然后回到这里刷新。</div>
+        </div>`;
+    }
+    return `
+      <div class="state-panel">
+        <div class="state-title">生成数据库数据字典</div>
+        <div class="state-desc">选择左侧的连接、库与表，点“生成数据字典”。首次读取某个连接时 DBX 会请求一次只读授权。</div>
+        <ol class="state-steps">
+          <li>选择一个已连接的数据库</li>
+          <li>勾选要导出的库，再勾选表</li>
+          <li>生成后可复制或保存为 Markdown</li>
+        </ol>
+      </div>`;
+  }
+
+  function renderDictionary() {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    const select = $("#dictConnection");
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${dict.connections.length ? "选择已连接的数据库" : "没有可用连接"}</option>` + dict.connections.map((row) => {
+      const reason = !row.connected ? "（未连接）" : !row.family ? `（暂不支持 ${row.dbType || "该类型"}）` : "";
+      const enabled = row.connected && row.family;
+      return `<option value="${escapeHtml(row.id)}" ${enabled ? "" : "disabled"} ${row.id === dict.connectionId ? "selected" : ""}>${escapeHtml(row.name + reason)}</option>`;
+    }).join("");
+    select.disabled = dict.loadingConnections || dict.generating;
+
+    const hint = $("#dictHint");
+    if (hint) {
+      hint.textContent = dict.hostReady === false
+        ? "需要 DBX 0.6.23+（Host API 1.4）。"
+        : connection
+          ? "只读查询；首次读取该连接时 DBX 会请求授权。"
+          : "只支持 MySQL / PostgreSQL / SQLite 及其兼容库。";
+    }
+
+    const dbFilterRow = $("#dictDbFilterRow");
+    if (dbFilterRow) dbFilterRow.hidden = !connection;
+
+    const databases = $("#dictDatabases");
+    if (databases) {
+      if (dict.loadingDatabases) {
+        databases.innerHTML = '<div class="dict-loading"><span class="spinner"></span>正在读取库…</div>';
+      } else if (connection && !dict.databases.length) {
+        databases.innerHTML = '<div class="dict-empty">没有可见的库。</div>';
+      } else if (!connection) {
+        databases.innerHTML = "";
+      } else {
+        const dbFilter = dict.dbFilter.trim().toLowerCase();
+        const matches = dbFilter
+          ? dict.databases.filter((database) => database.name.toLowerCase().includes(dbFilter))
+          : dict.databases;
+        const hiddenChecked = dict.databases.filter((database) => database.checked && !matches.includes(database)).length;
+        databases.innerHTML = `
+          <div class="dict-group-title">
+            <span>库</span>
+            ${dbFilter ? `<span class="dict-group-tools"><span class="dict-tag">${matches.length}/${dict.databases.length}</span></span>` : ""}
+          </div>` + (matches.length ? matches.map((database) => {
+            const index = dict.databases.indexOf(database);
+            return `
+          <label class="dict-check">
+            <input type="checkbox" data-db="${index}" ${database.checked ? "checked" : ""} ${database.loading || dict.generating ? "disabled" : ""}>
+            <span>${escapeHtml(database.name)}</span>
+            ${database.loading ? '<span class="dict-tag">读取中</span>' : database.loaded ? `<span class="dict-tag">${database.tables.length} 张表</span>` : ""}
+          </label>`;
+          }).join("") : '<div class="dict-empty">没有匹配的库。</div>') +
+          (hiddenChecked ? `<div class="dict-hint dict-hidden-note">已勾选的 ${hiddenChecked} 个库不在筛选结果中。</div>` : "");
+      }
+    }
+
+    const tables = $("#dictTables");
+    if (tables) {
+      const checked = dict.databases.filter((database) => database.checked);
+      if (!checked.length) {
+        tables.innerHTML = '<div class="dict-empty">勾选库后列出表。</div>';
+      } else if (checked.some((database) => database.loading)) {
+        tables.innerHTML = '<div class="dict-loading"><span class="spinner"></span>正在读取表…</div>';
+      } else {
+        const filter = dict.filter.trim().toLowerCase();
+        tables.innerHTML = checked.map((database) => {
+          const databaseIndex = dict.databases.indexOf(database);
+          const visible = database.tables.filter((table) => {
+            if (!filter) return true;
+            const label = `${table.schema}.${table.name} ${table.comment}`.toLowerCase();
+            return label.includes(filter);
+          });
+          const picked = database.tables.filter((table) => table.checked).length;
+          return `
+            <div class="dict-group" data-group="${escapeHtml(database.name)}">
+              <div class="dict-group-title">
+                <span>${escapeHtml(database.name)}</span>
+                <span class="dict-group-tools">
+                  <button class="text-btn" type="button" data-db-all="${escapeHtml(database.name)}">全选</button>
+                  <button class="text-btn" type="button" data-db-none="${escapeHtml(database.name)}">清空</button>
+                  <span class="dict-tag">${picked}/${database.tables.length}</span>
+                </span>
+              </div>
+              ${visible.length ? visible.map((table) => {
+                const index = database.tables.indexOf(table);
+                const label = table.schema && table.schema !== database.name && table.schema !== "public"
+                  ? `${table.schema}.${table.name}`
+                  : table.name;
+                return `
+                  <label class="dict-check dict-table">
+                    <input type="checkbox" data-table="${databaseIndex}:${index}" ${table.checked ? "checked" : ""} ${dict.generating ? "disabled" : ""}>
+                    <span class="dict-table-name" title="${escapeHtml(table.name)}">${escapeHtml(label)}</span>
+                    ${table.comment ? `<span class="dict-table-comment" title="${escapeHtml(table.comment)}">${escapeHtml(table.comment)}</span>` : ""}
+                  </label>`;
+              }).join("") : '<div class="dict-empty">没有匹配的表。</div>'}
+            </div>`;
+        }).join("");
+      }
+    }
+
+    const alert = $("#dictAlert");
+    if (alert) {
+      alert.innerHTML = dict.error
+        ? `<div class="dict-alert danger">${escapeHtml(dict.error)}</div>`
+        : dict.notice
+          ? `<div class="dict-alert">${escapeHtml(dict.notice)}</div>`
+          : "";
+    }
+
+    const count = selectedDictionaryTableCount();
+    const foot = $("#dictFootText");
+    if (foot) foot.textContent = count ? `已选 ${count} 张表` : "未选择表";
+    const clear = $("#dictClearSel");
+    if (clear) clear.disabled = !count || dict.generating;
+
+    const generate = $("#dictGenerateBtn");
+    if (generate) {
+      generate.disabled = dict.generating || !connection || !count;
+      generate.textContent = dict.generating
+        ? (dict.progress ? `读取中 ${dict.progress}` : "读取中…")
+        : "生成数据字典";
+    }
+
+    const body = $("#dictBody");
+    if (body) {
+      body.innerHTML = dict.markdown
+        ? `<div class="doc-sheet"><article class="prose">${renderMarkdown(dict.markdown)}</article></div>`
+        : dictionaryEmptyState();
+    }
+    const identity = $("#dictIdentity");
+    if (identity) {
+      identity.innerHTML = `
+        <span class="ftype db">DB</span>
+        <span class="identity-text">
+          <span class="identity-name"><span>${escapeHtml(connection ? `${connection.name} 数据字典` : "数据字典")}</span></span>
+          <span class="identity-meta">${escapeHtml(dict.markdown ? dict.generatedLabel : "从 DBX 已连接的数据库生成")}</span>
+        </span>`;
+    }
+    const copy = $("#dictCopyBtn");
+    if (copy) copy.disabled = !dict.markdown;
+    const save = $("#dictSaveBtn");
+    if (save) save.disabled = !dict.markdown;
+    const saveWord = $("#dictSaveWordBtn");
+    if (saveWord) {
+      saveWord.disabled = !dict.markdown || dict.savingWord;
+      const label = saveWord.querySelector("span");
+      if (label) label.textContent = dict.savingWord ? "生成中…" : "保存 Word";
+    }
+  }
+
+  function setMode(mode) {
+    const next = mode === "dictionary" ? "dictionary" : "convert";
+    state.mode = next;
+    document.body.dataset.mode = next;
+    if (next === "dictionary") closeSettings();
+    $$(".mode-btn").forEach((button) => {
+      const active = button.dataset.mode === next;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+    const convertPane = $("#convertWorkspace");
+    const dictPane = $("#dictWorkspace");
+    if (convertPane) convertPane.hidden = next === "dictionary";
+    if (dictPane) dictPane.hidden = next !== "dictionary";
+    const strip = $("#conversionStrip");
+    if (strip) strip.hidden = next === "dictionary";
+    for (const id of ["convertBtn", "openSettings", "settingsBtn"]) {
+      const element = $(`#${id}`);
+      if (element) element.hidden = next === "dictionary";
+    }
+    if (next === "dictionary") {
+      if (!state.dictionary.loadedConnections && !state.dictionary.loadingConnections) void loadDictionaryConnections();
+      else renderDictionary();
+    }
+  }
+
+  async function copyDictionary() {
+    const markdown = state.dictionary.markdown;
+    if (!markdown) return;
+    try {
+      await host.copy(markdown);
+      showToast("已复制数据字典 Markdown");
+    } catch (error) {
+      showToast(`复制失败：${errorText(error)}`);
+    }
+  }
+
+  async function saveDictionary() {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    if (!dict.markdown || !connection) return;
+    const safeName = String(connection.name).replace(/[\\/:*?"<>|]/g, "-").trim() || "database";
+    try {
+      const saved = await saveText(`${safeName}-数据字典.md`, "text/markdown;charset=utf-8", dict.markdown);
+      if (saved) showToast("数据字典已保存");
+    } catch (error) {
+      showToast(`保存失败：${errorText(error)}`);
+    }
+  }
+
+  async function saveDictionaryWord() {
+    const dict = state.dictionary;
+    const connection = dictionaryConnection();
+    if (!dict.markdown || !connection || dict.savingWord) return;
+    dict.savingWord = true;
+    renderDictionary();
+    const safeName = String(connection.name).replace(/[\\/:*?"<>|]/g, "-").trim() || "database";
+    let fileId = null;
+    try {
+      const bytes = new TextEncoder().encode(dict.markdown);
+      const begin = await host.invoke("doc/dictionaryDocxBegin", { size: bytes.length }, { timeoutMs: 20000 });
+      fileId = String(begin && begin.fileId ? begin.fileId : "");
+      if (!fileId) throw new Error("Word 转换服务未返回任务标识。");
+      for (let offset = 0; offset < bytes.length; offset += UPLOAD_CHUNK_BYTES) {
+        const slice = bytes.subarray(offset, offset + UPLOAD_CHUNK_BYTES);
+        await host.invoke("doc/dictionaryDocxChunk", { fileId, offset, dataBase64: encodeBase64(slice) }, { timeoutMs: 60000 });
+      }
+      const created = await host.invoke("doc/dictionaryDocxCommit", { fileId, title: `${connection.name}-数据字典` }, { timeoutMs: 120000 });
+      const data = await readBinary("doc/readDictionaryDocx", { fileId });
+      if (!data.length) throw new Error("生成的 Word 文件为空。");
+      const name = created && created.name ? String(created.name) : `${safeName}-数据字典.docx`;
+      const saved = await saveBytes(name, DOCX_MIME, data);
+      if (saved) showToast("数据字典已保存为 Word");
+    } catch (error) {
+      showToast(`保存 Word 失败：${errorText(error)}`);
+    } finally {
+      if (fileId) {
+        try { await host.invoke("doc/discardDictionaryDocx", { fileId }, { timeoutMs: 10000 }); } catch { /* best effort */ }
+      }
+      dict.savingWord = false;
+      renderDictionary();
+    }
+  }
+
   async function loadSettings() {
     if (!host.capabilities?.storage) return;
     try {
@@ -2861,6 +3853,91 @@
   }
 
   function bindEvents() {
+    $$(".mode-btn").forEach((button) => button.addEventListener("click", () => {
+      if (button.dataset.mode !== state.mode) setMode(button.dataset.mode);
+    }));
+    const connectionSelect = $("#dictConnection");
+    if (connectionSelect) {
+      connectionSelect.addEventListener("change", (event) => {
+        state.dictionary.connectionId = event.target.value;
+        resetDictionaryFilters();
+        void loadDictionaryDatabases();
+      });
+    }
+    const dictRefresh = $("#dictRefresh");
+    if (dictRefresh) {
+      dictRefresh.addEventListener("click", () => {
+        void (async () => {
+          await loadDictionaryConnections();
+          if (state.dictionary.connectionId) await loadDictionaryDatabases();
+        })();
+      });
+    }
+    const dictDatabases = $("#dictDatabases");
+    if (dictDatabases) {
+      dictDatabases.addEventListener("change", (event) => {
+        const input = event.target.closest("input[data-db]");
+        if (!input) return;
+        const database = state.dictionary.databases[Number(input.dataset.db)];
+        if (database) void toggleDictionaryDatabase(database.name, input.checked);
+      });
+    }
+    const dictTables = $("#dictTables");
+    if (dictTables) {
+      dictTables.addEventListener("change", (event) => {
+        const input = event.target.closest("input[data-table]");
+        if (!input) return;
+        const [databaseIndex, tableIndex] = String(input.dataset.table || "").split(":");
+        const database = state.dictionary.databases[Number(databaseIndex)];
+        const table = database && database.tables[Number(tableIndex)];
+        if (!table) return;
+        table.checked = input.checked;
+        renderDictionary();
+      });
+      dictTables.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-db-all], [data-db-none]");
+        if (!button || state.dictionary.generating) return;
+        const all = Boolean(button.dataset.dbAll !== undefined);
+        const name = all ? button.dataset.dbAll : button.dataset.dbNone;
+        const database = state.dictionary.databases.find((row) => row.name === name);
+        if (!database) return;
+        database.tables.forEach((table) => { table.checked = all; });
+        renderDictionary();
+      });
+    }
+    const dictDbFilter = $("#dictDbFilter");
+    if (dictDbFilter) {
+      dictDbFilter.addEventListener("input", (event) => {
+        state.dictionary.dbFilter = event.target.value;
+        renderDictionary();
+      });
+    }
+    const dictFilter = $("#dictFilter");
+    if (dictFilter) {
+      dictFilter.addEventListener("input", (event) => {
+        state.dictionary.filter = event.target.value;
+        renderDictionary();
+      });
+    }
+    const dictClearSel = $("#dictClearSel");
+    if (dictClearSel) {
+      dictClearSel.addEventListener("click", () => {
+        for (const database of state.dictionary.databases) {
+          database.checked = false;
+          database.tables.forEach((table) => { table.checked = false; });
+        }
+        renderDictionary();
+      });
+    }
+    const dictGenerateBtn = $("#dictGenerateBtn");
+    if (dictGenerateBtn) dictGenerateBtn.addEventListener("click", () => { void generateDictionary(); });
+    const dictCopyBtn = $("#dictCopyBtn");
+    if (dictCopyBtn) dictCopyBtn.addEventListener("click", () => { void copyDictionary(); });
+    const dictSaveBtn = $("#dictSaveBtn");
+    if (dictSaveBtn) dictSaveBtn.addEventListener("click", () => { void saveDictionary(); });
+    const dictSaveWordBtn = $("#dictSaveWordBtn");
+    if (dictSaveWordBtn) dictSaveWordBtn.addEventListener("click", () => { void saveDictionaryWord(); });
+
     $("#openSettings").addEventListener("click", openSettings);
     $("#settingsBtn").addEventListener("click", openSettings);
     $("#closeSettings").addEventListener("click", closeSettings);
@@ -2997,7 +4074,8 @@
       }
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
         event.preventDefault();
-        startConversion();
+        if (state.mode === "dictionary") void generateDictionary();
+        else startConversion();
       }
     });
   }

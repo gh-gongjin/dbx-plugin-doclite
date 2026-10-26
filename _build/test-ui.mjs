@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
+import zlib from "node:zlib";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -48,11 +49,29 @@ function check(name, ok, detail = "") {
   console.log(`${ok ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
+function readZipEntry(buffer, entryName) {
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const method = buffer.readUInt16LE(offset + 8);
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const name = buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8");
+    const dataStart = offset + 30 + nameLength + extraLength;
+    if (name === entryName) {
+      const raw = buffer.subarray(dataStart, dataStart + size);
+      return method === 8 ? zlib.inflateRawSync(raw) : raw;
+    }
+    offset = dataStart + size;
+  }
+  throw new Error(`zip entry not found: ${entryName}`);
+}
+
 class Sidecar {
   constructor(command, args, extraEnv = {}) {
     this.child = spawn(command, args, {
       cwd: root,
-      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.9", ...extraEnv },
+      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.12", ...extraEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.stderr = "";
@@ -240,6 +259,255 @@ await page.exposeFunction("__dbxStorageGet", async (key) => (key in storage ? st
 await page.exposeFunction("__dbxStorageSet", async (key, value) => { storage[key] = value; return null; });
 await page.exposeFunction("__dbxStorageDelete", async (key) => { delete storage[key]; return null; });
 
+// ---- Host API 1.4 data-dictionary fixtures -------------------------------
+const dictionaryConnections = [
+  { id: "mysql-main", name: "生产 MySQL", dbType: "mysql", connected: true, isConnected: true, database: "shop" },
+  { id: "pg-main", name: "应用 PG", dbType: "postgres", connected: true, isConnected: true, database: "appdb" },
+  { id: "sqlite-main", name: "本地 SQLite", dbType: "sqlite", connected: true, isConnected: true, database: "local.db" },
+  { id: "mongo-main", name: "文档库", dbType: "mongodb", connected: true, isConnected: true },
+  { id: "mysql-down", name: "离线 MySQL", dbType: "mysql", connected: false, isConnected: false },
+];
+
+const mysqlCatalog = {
+  shop: [
+    {
+      name: "orders", comment: "订单",
+      columns: [
+        ["id", "bigint", "NO", "", "主键", "PRI"],
+        ["order_no", "varchar(32)", "NO", "", "订单号", "UNI"],
+        ["user_id", "bigint", "NO", "", "下单用户", "MUL"],
+        ["total", "decimal(12,2)", "NO", "0.00", "金额", ""],
+        ["status", "varchar(20)", "NO", "'pending'", "状态", ""],
+        ["created_at", "datetime", "NO", "CURRENT_TIMESTAMP", "创建时间", ""],
+      ],
+      indexes: [["PRIMARY", "id", 0], ["uk_orders_no", "order_no", 0], ["idx_orders_user", "user_id", 1]],
+      foreignKeys: [["fk_orders_user", "user_id", "users", "id"]],
+    },
+    {
+      name: "order_items", comment: "订单明细",
+      columns: [
+        ["id", "bigint", "NO", "", "", "PRI"],
+        ["order_id", "bigint", "NO", "", "", "MUL"],
+        ["sku", "varchar(64)", "NO", "", "商品编码", ""],
+        ["qty", "int", "NO", "1", "数量", ""],
+      ],
+      indexes: [["PRIMARY", "id", 0], ["idx_items_order", "order_id", 1]],
+      foreignKeys: [["fk_items_order", "order_id", "orders", "id"]],
+    },
+    {
+      name: "users", comment: "",
+      columns: [
+        ["id", "bigint", "NO", "", "", "PRI"],
+        ["email", "varchar(255)", "YES", "", "邮箱", "UNI"],
+        ["nickname", "varchar(64)", "YES", "NULL", "昵称", ""],
+      ],
+      indexes: [["PRIMARY", "id", 0], ["uk_users_email", "email", 0]],
+      foreignKeys: [],
+    },
+  ],
+  analytics: [
+    {
+      name: "events", comment: "埋点事件",
+      columns: [["id", "bigint", "NO", "", "", "PRI"], ["name", "varchar(64)", "NO", "", "事件名", ""]],
+      indexes: [["PRIMARY", "id", 0]],
+      foreignKeys: [],
+    },
+  ],
+};
+
+const pgCatalog = {
+  public: [
+    {
+      name: "customers", comment: "客户",
+      columns: [
+        ["id", "bigint", false, "nextval('customers_id_seq'::regclass)", "主键"],
+        ["code", "text", false, "", "客户编码"],
+        ["name", "text", true, "", "客户名称"],
+      ],
+      indexes: [["customers_pkey", "id", false, true], ["uk_customers_code", "code", true, false]],
+      foreignKeys: [],
+    },
+    {
+      name: "invoices", comment: "发票",
+      columns: [
+        ["id", "bigint", false, "", ""],
+        ["customer_id", "bigint", false, "", "客户"],
+        ["amount", "numeric(12,2)", false, "0", "金额"],
+      ],
+      indexes: [["invoices_pkey", "id", false, true], ["idx_invoices_customer", "customer_id", false, false]],
+      foreignKeys: [["invoices_customer_fk", "customer_id", "public", "customers", "id"]],
+    },
+  ],
+  audit: [
+    {
+      name: "change_log", comment: "变更日志",
+      columns: [["id", "bigint", false, "", ""], ["entity", "text", true, "", "实体"]],
+      indexes: [["change_log_pkey", "id", false, true]],
+      foreignKeys: [],
+    },
+  ],
+};
+
+const sqliteCatalog = [
+  {
+    name: "accounts",
+    columns: [["id", "INTEGER", true, "", 1], ["email", "TEXT", true, "", 0], ["balance", "REAL", false, "0.0", 0]],
+    indexes: [["uk_accounts_email", 1, "u", ["email"]], ["idx_accounts_balance", 0, "c", ["balance"]]],
+    foreignKeys: [],
+  },
+  {
+    name: "entries",
+    columns: [["id", "INTEGER", true, "", 1], ["account_id", "INTEGER", true, "", 0], ["amount", "REAL", true, "", 0]],
+    indexes: [["idx_entries_account", 0, "c", ["account_id"]]],
+    foreignKeys: [[0, 0, "accounts", "account_id", "id"]],
+  },
+];
+
+const dataQueries = [];
+let dataDenied = false;
+
+const fakeResult = (connection, columns, rows) => ({
+  dbType: connection.dbType,
+  columns: columns.map((name) => ({ name })),
+  rows,
+  truncated: false,
+  elapsedMs: 1,
+});
+
+function literalAfter(sql, pattern) {
+  const match = sql.match(pattern);
+  return match ? match[1].replace(/''/g, "'") : "";
+}
+
+function fakeQueryData(request) {
+  const connection = dictionaryConnections.find((row) => row.id === request.connectionId);
+  if (!connection) throw new Error("Connection not found");
+  if (dataDenied) throw new Error("PLUGIN_DATA_ACCESS_NOT_GRANTED: user denied");
+  if (!connection.connected) throw new Error("Connection is not open");
+  dataQueries.push({ ...request });
+  const sql = String(request.sql);
+
+  if (connection.dbType === "mysql") {
+    if (sql.includes("information_schema.schemata")) {
+      return fakeResult(connection, ["name"], Object.keys(mysqlCatalog).map((name) => [name]));
+    }
+    if (sql.includes("FROM information_schema.tables") && !sql.includes("information_schema.columns")) {
+      const database = literalAfter(sql, /table_schema = '([^']*)'/);
+      return fakeResult(connection, ["name", "comment"], (mysqlCatalog[database] || []).map((table) => [table.name, table.comment]));
+    }
+    if (sql.includes("information_schema.columns")) {
+      const database = literalAfter(sql, /c\.table_schema = '([^']*)'/);
+      const rows = [];
+      for (const table of mysqlCatalog[database] || []) {
+        table.columns.forEach((column, index) => {
+          rows.push([table.name, column[0], column[1], column[2], column[3], column[4], column[5], "", index + 1, table.comment]);
+        });
+      }
+      return fakeResult(connection, ["table_name", "column_name", "data_type", "is_nullable", "column_default", "column_comment", "column_key", "extra", "ordinal_position", "table_comment"], rows);
+    }
+    if (sql.includes("information_schema.statistics")) {
+      const database = literalAfter(sql, /table_schema = '([^']*)'/);
+      const rows = [];
+      for (const table of mysqlCatalog[database] || []) {
+        for (const index of table.indexes) {
+          rows.push([table.name, index[0], index[2], 1, index[1], "BTREE"]);
+        }
+      }
+      return fakeResult(connection, ["table_name", "index_name", "non_unique", "seq_in_index", "column_name", "index_type"], rows);
+    }
+    if (sql.includes("information_schema.key_column_usage")) {
+      const database = literalAfter(sql, /table_schema = '([^']*)'/);
+      const rows = [];
+      for (const table of mysqlCatalog[database] || []) {
+        for (const key of table.foreignKeys) {
+          rows.push([table.name, key[0], key[1], 1, key[2], key[3]]);
+        }
+      }
+      return fakeResult(connection, ["table_name", "constraint_name", "column_name", "ordinal_position", "referenced_table_name", "referenced_column_name"], rows);
+    }
+  }
+
+  if (connection.dbType === "postgres") {
+    if (sql.includes("FROM pg_database")) {
+      return fakeResult(connection, ["name"], [["appdb"]]);
+    }
+    if (/AS schema_name, c\.relname AS name, obj_description/.test(sql)) {
+      const rows = [];
+      for (const [schema, tables] of Object.entries(pgCatalog)) {
+        for (const table of tables) rows.push([schema, table.name, table.comment]);
+      }
+      return fakeResult(connection, ["schema_name", "name", "comment"], rows);
+    }
+    if (/a\.attname AS column_name, format_type/.test(sql)) {
+      const rows = [];
+      for (const [schema, tables] of Object.entries(pgCatalog)) {
+        for (const table of tables) {
+          table.columns.forEach((column, index) => {
+            rows.push([schema, table.name, column[0], column[1], column[2], column[3], column[4], table.comment, index + 1]);
+          });
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "column_name", "data_type", "is_nullable", "column_default", "column_comment", "table_comment", "ordinal_position"], rows);
+    }
+    if (sql.includes("FROM pg_index ix")) {
+      const rows = [];
+      for (const [schema, tables] of Object.entries(pgCatalog)) {
+        for (const table of tables) {
+          for (const index of table.indexes) {
+            rows.push([schema, table.name, index[0], index[2], index[3], index[1], 1]);
+          }
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "index_name", "is_unique", "is_primary", "column_name", "ordinal_position"], rows);
+    }
+    if (sql.includes("FROM pg_constraint con")) {
+      const rows = [];
+      for (const [schema, tables] of Object.entries(pgCatalog)) {
+        for (const table of tables) {
+          for (const key of table.foreignKeys) {
+            rows.push([schema, table.name, key[0], key[1], key[2], key[3], key[4], 1]);
+          }
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "constraint_name", "column_name", "ref_schema", "ref_table", "ref_column", "ordinal_position"], rows);
+    }
+  }
+
+  if (connection.dbType === "sqlite") {
+    if (sql.includes("sqlite_master")) {
+      return fakeResult(connection, ["name", "comment"], sqliteCatalog.map((table) => [table.name, ""]));
+    }
+    const tableName = literalAfter(sql, /pragma_(?:table_info|index_list|foreign_key_list)\('([^']*)'\)/);
+    const indexName = literalAfter(sql, /pragma_index_info\('([^']*)'\)/);
+    if (sql.includes("pragma_table_info")) {
+      const table = sqliteCatalog.find((row) => row.name === tableName);
+      return fakeResult(connection, ["column_name", "data_type", "not_null", "column_default", "primary_key", "ordinal_position"],
+        (table?.columns || []).map((column, index) => [column[0], column[1], column[2] ? 1 : 0, column[3], column[4], index]));
+    }
+    if (sql.includes("pragma_index_list")) {
+      const table = sqliteCatalog.find((row) => row.name === tableName);
+      return fakeResult(connection, ["index_name", "is_unique", "origin"], (table?.indexes || []).map((index) => [index[0], index[1], index[2]]));
+    }
+    if (sql.includes("pragma_index_info")) {
+      for (const table of sqliteCatalog) {
+        const index = table.indexes.find((row) => row[0] === indexName);
+        if (index) return fakeResult(connection, ["seqno", "cid", "name"], index[3].map((name, position) => [position, 0, name]));
+      }
+      return fakeResult(connection, ["seqno", "cid", "name"], []);
+    }
+    if (sql.includes("pragma_foreign_key_list")) {
+      const table = sqliteCatalog.find((row) => row.name === tableName);
+      return fakeResult(connection, ["id", "seq", "ref_table", "column_name", "ref_column"], table?.foreignKeys || []);
+    }
+  }
+
+  throw new Error(`unexpected dictionary SQL: ${sql.slice(0, 120)}`);
+}
+
+await page.exposeFunction("__dbxGetConnections", async () => dictionaryConnections);
+await page.exposeFunction("__dbxQueryData", async (request) => fakeQueryData(request || {}));
+await page.exposeFunction("__dbxDenyData", async (flag) => { dataDenied = Boolean(flag); return null; });
+
 await page.addInitScript(() => {
   window.__dbxStatus = false;
   // Mirror the real SDK: `capabilities` stays empty until the host answers
@@ -253,6 +521,9 @@ await page.addInitScript(() => {
     window.__dbxCapabilities = {
       storage: true,
       clipboardWrite: true,
+      connectionsApi: true,
+      dataApi: true,
+      schemaMetadataApi: true,
       fileTransfer: { pick: true, read: true, beginSave: true, drop: true, folderExpansion: true },
     };
     resolveReady(window.__dbxCapabilities);
@@ -309,6 +580,8 @@ await page.addInitScript(() => {
       });
     },
     copy: (text) => window.__dbxCopy(text),
+    getConnections: () => window.__dbxGetConnections(),
+    queryData: (request) => window.__dbxQueryData(request),
     storage: Object.freeze({
       get: (key) => window.__dbxStorageGet(key),
       set: (key, value) => window.__dbxStorageSet(key, value),
@@ -335,6 +608,7 @@ await page.addInitScript(() => {
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
       return bytes;
     },
+    encodeBase64: (value) => encode(value instanceof Uint8Array ? value : new Uint8Array(value)),
   });
 });
 
@@ -866,6 +1140,197 @@ check(
   await page.locator('.file-item:has(.file-name[title="contracts/sample.docx"]) input[data-check]').isChecked(),
 );
 await page.screenshot({ path: path.join(shots, "ui-12-folder-drop.png") });
+
+// 10. 数据字典（Host API 1.4）
+const queueBeforeDict = Number(await page.locator("#queueCount").textContent());
+await page.click('.mode-btn[data-mode="dictionary"]');
+await page.waitForFunction(() => document.querySelectorAll("#dictConnection option").length > 1, null, { timeout: 10000 });
+check(
+  "模式切换显示数据字典面板",
+  (await page.locator("#dictWorkspace").isVisible()) && !(await page.locator("#convertWorkspace").isVisible()),
+);
+check(
+  "数据字典模式隐藏文件转换控件",
+  (await page.locator("#convertBtn").isHidden()) && (await page.locator("#openSettings").isHidden()) && (await page.locator("#settingsBtn").isHidden()),
+);
+const modeState = await page.evaluate(() => ({
+  active: document.querySelector(".mode-btn.active")?.dataset.mode,
+  selected: document.querySelector('.mode-btn[data-mode="dictionary"]')?.getAttribute("aria-selected"),
+}));
+check("模式按钮状态同步", modeState.active === "dictionary" && modeState.selected === "true", JSON.stringify(modeState));
+
+const connectionOptions = await page.evaluate(() => Array.from(document.querySelectorAll("#dictConnection option")).map((option) => ({
+  value: option.value,
+  text: option.textContent,
+  disabled: option.disabled,
+})));
+check("列出 DBX 已保存连接", connectionOptions.length === 6, connectionOptions.map((option) => option.text).join(" | "));
+check(
+  "未连接与不支持类型置灰",
+  connectionOptions.find((option) => option.value === "mysql-down")?.disabled === true
+    && connectionOptions.find((option) => option.value === "mongo-main")?.disabled === true
+    && /暂不支持/.test(connectionOptions.find((option) => option.value === "mongo-main")?.text || ""),
+  connectionOptions.filter((option) => option.disabled).map((option) => option.text).join(" | "),
+);
+check("读取连接列表不触发数据查询", dataQueries.length === 0, `queries=${dataQueries.length}`);
+check("未选连接时不显示库筛选框", await page.locator("#dictDbFilter").isHidden());
+
+await page.selectOption("#dictConnection", "mysql-main");
+await page.waitForFunction(() => document.querySelectorAll("#dictDatabases input[data-db]").length === 2, null, { timeout: 10000 });
+const databasePanel = await page.locator("#dictDatabases").innerText();
+check("MySQL 列出可见库", databasePanel.includes("shop") && databasePanel.includes("analytics"), databasePanel);
+check("未勾选库时不列出表", (await page.locator("#dictTables").innerText()).includes("勾选库后列出表"));
+
+await page.locator("#dictDatabases input[data-db]").first().check();
+await page.waitForFunction(() => document.querySelectorAll("#dictTables input[data-table]").length === 3, null, { timeout: 10000 });
+const mysqlTableNames = await page.evaluate(() => Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent));
+check("勾选库后加载表且默认全选", mysqlTableNames.join(",") === "order_items,orders,users", mysqlTableNames.join(","));
+check("统计已选表数量", (await page.locator("#dictFootText").innerText()) === "已选 3 张表");
+check("选择表后生成按钮可用", !(await page.locator("#dictGenerateBtn").isDisabled()));
+
+check("选择连接后显示库筛选框", await page.locator("#dictDbFilter").isVisible());
+await page.fill("#dictDbFilter", "ana");
+await page.waitForTimeout(120);
+const filteredDatabases = await page.evaluate(() => Array.from(document.querySelectorAll("#dictDatabases input[data-db]")).map((input) => input.parentElement.textContent.trim()));
+check("按库名筛选", filteredDatabases.length === 1 && filteredDatabases[0].includes("analytics"), filteredDatabases.join(" | "));
+check("库筛选显示匹配数量", (await page.locator("#dictDatabases .dict-group-title .dict-tag").innerText()) === "1/2");
+check("提示被筛选隐藏的已勾选库", (await page.locator("#dictDatabases .dict-hidden-note").innerText()).includes("已勾选的 1 个库"));
+check("库筛选不影响已选表", (await page.locator("#dictFootText").innerText()) === "已选 3 张表");
+await page.screenshot({ path: path.join(shots, "ui-13b-db-filter.png") });
+await page.fill("#dictDbFilter", "zzz");
+await page.waitForTimeout(120);
+check("库筛选无匹配时给出提示", (await page.locator("#dictDatabases").innerText()).includes("没有匹配的库"));
+await page.fill("#dictDbFilter", "");
+await page.waitForTimeout(120);
+check("清空库筛选恢复全部库", (await page.locator("#dictDatabases input[data-db]").count()) === 2);
+
+await page.fill("#dictFilter", "订单");
+await page.waitForTimeout(120);
+const filteredTables = await page.evaluate(() => Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent));
+check("按表名与注释筛选", filteredTables.join(",") === "order_items,orders", filteredTables.join(","));
+await page.fill("#dictFilter", "");
+await page.waitForTimeout(120);
+check("清空筛选恢复全部表", (await page.locator("#dictTables input[data-table]").count()) === 3);
+
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+check("生成 MySQL 数据字典", (await page.locator("#dictBody .prose h1").innerText()).includes("生产 MySQL"));
+const mysqlBody = await page.locator("#dictBody").innerText();
+check(
+  "字典包含表注释与字段注释",
+  mysqlBody.includes("orders — 订单") && mysqlBody.includes("订单号") && mysqlBody.includes("创建时间"),
+  mysqlBody.slice(0, 120),
+);
+check("字典标注主键与唯一键", mysqlBody.includes("PK") && mysqlBody.includes("UK") && mysqlBody.includes("uk_orders_no"));
+check("字典列出索引与外键", mysqlBody.includes("idx_orders_user") && mysqlBody.includes("fk_orders_user") && mysqlBody.includes("users(id)"));
+const mysqlStats = await page.locator("#dictIdentity .identity-meta").innerText();
+check("字典统计表数与字段数", /3 张表 · 13 个字段/.test(mysqlStats), mysqlStats);
+await page.screenshot({ path: path.join(shots, "ui-13-dictionary.png") });
+
+await page.click("#dictCopyBtn");
+await page.waitForTimeout(150);
+check("复制数据字典 Markdown", (copied.at(-1) || "").includes("# 数据库数据字典：生产 MySQL"));
+await page.click("#dictSaveBtn");
+await page.waitForTimeout(400);
+const dictionaryFile = path.join(saveDir, "生产 MySQL-数据字典.md");
+check(
+  "保存数据字典为 Markdown",
+  fs.existsSync(dictionaryFile) && fs.readFileSync(dictionaryFile, "utf8").includes("## 库 `shop`"),
+  dictionaryFile,
+);
+
+check("生成后 Word 保存按钮可用", !(await page.locator("#dictSaveWordBtn").isDisabled()));
+await page.click("#dictSaveWordBtn");
+await page.waitForFunction(() => document.querySelector("#toastWrap").innerText.includes("已保存为 Word"), null, { timeout: 30000 });
+const dictionaryDocx = path.join(saveDir, "生产 MySQL-数据字典.docx");
+const docxBuffer = fs.existsSync(dictionaryDocx) ? fs.readFileSync(dictionaryDocx) : Buffer.alloc(0);
+check("保存数据字典为 Word", docxBuffer.length > 1000 && docxBuffer.subarray(0, 2).toString("latin1") === "PK", `${dictionaryDocx} ${docxBuffer.length}B`);
+const docxDocument = docxBuffer.length ? readZipEntry(docxBuffer, "word/document.xml").toString("utf8") : "";
+check(
+  "Word 文档包含字典内容",
+  docxDocument.includes("数据库数据字典：生产 MySQL") && docxDocument.includes("orders") && docxDocument.includes("订单号"),
+  `${docxDocument.length} chars`,
+);
+check(
+  "Word 表格使用重复表头",
+  docxDocument.includes("<w:tblHeader/>") || docxDocument.includes("<w:tblHeader "),
+);
+check("保存 Word 后按钮恢复可用", !(await page.locator("#dictSaveWordBtn").isDisabled()) && (await page.locator("#dictSaveWordBtn").innerText()).includes("保存 Word"));
+
+await page.click('.mode-btn[data-mode="convert"]');
+await page.waitForTimeout(150);
+check(
+  "切回文档转换保留队列",
+  (await page.locator("#convertWorkspace").isVisible()) && Number(await page.locator("#queueCount").textContent()) === queueBeforeDict,
+);
+check("切回文档转换恢复转换控件", (await page.locator("#convertBtn").isVisible()) && (await page.locator("#openSettings").isVisible()));
+await page.click('.mode-btn[data-mode="dictionary"]');
+await page.waitForTimeout(200);
+check("切回数据字典保留生成结果", (await page.locator("#dictBody .prose h1").innerText()).includes("生产 MySQL"));
+
+await page.evaluate(() => window.__dbxDenyData(true));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => {
+  const alert = document.querySelector("#dictAlert .dict-alert");
+  return Boolean(alert && alert.classList.contains("danger"));
+}, null, { timeout: 10000 });
+const deniedText = await page.locator("#dictAlert").innerText();
+check("拒绝授权时给出中文提示", deniedText.includes("未获得只读授权"), deniedText);
+check("拒绝授权时不产出字典", (await page.locator("#dictBody .prose h1").count()) === 0);
+await page.evaluate(() => window.__dbxDenyData(false));
+
+await page.fill("#dictDbFilter", "appdb");
+await page.selectOption("#dictConnection", "pg-main");
+await page.waitForFunction(() => document.querySelectorAll("#dictTables input[data-table]").length === 3, null, { timeout: 10000 });
+check("切换连接重置库筛选", (await page.inputValue("#dictDbFilter")) === "");
+const pgTableNames = await page.evaluate(() => Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent));
+check("PostgreSQL 单库自动加载并按 schema 排序", pgTableNames.join(",") === "audit.change_log,customers,invoices", pgTableNames.join(","));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const pgBody = await page.locator("#dictBody").innerText();
+check(
+  "PostgreSQL 字典包含跨 schema 表",
+  pgBody.includes("audit.change_log — 变更日志") && pgBody.includes("customers — 客户"),
+  pgBody.slice(0, 160),
+);
+check("PostgreSQL 外键带 schema 前缀", pgBody.includes("invoices_customer_fk") && pgBody.includes("public.customers(id)"));
+check("PostgreSQL 唯一索引标注 UK", pgBody.includes("uk_customers_code") && pgBody.includes("UK"));
+
+await page.selectOption("#dictConnection", "sqlite-main");
+await page.waitForFunction(() => document.querySelectorAll("#dictTables input[data-table]").length === 2, null, { timeout: 10000 });
+check("SQLite 使用连接内的库", (await page.locator("#dictDatabases").innerText()).includes("local.db"));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const sqliteBody = await page.locator("#dictBody").innerText();
+check(
+  "SQLite 字典包含主键与唯一索引",
+  sqliteBody.includes("accounts") && sqliteBody.includes("entries") && sqliteBody.includes("uk_accounts_email")
+    && sqliteBody.includes("PK") && sqliteBody.includes("UK"),
+);
+check("SQLite 外键生成约束名", sqliteBody.includes("entries_fk_0") && sqliteBody.includes("accounts(id)"));
+
+const illegalQueries = dataQueries.filter((query) => (
+  !query.connectionId
+  || !query.sql
+  || (query.maxRows || 0) > 5000
+  || query.sql.length > 100000
+  || query.sql.includes(";")
+  || /^\s*USE\b/i.test(query.sql)
+));
+check("只读查询参数合法", illegalQueries.length === 0, JSON.stringify(illegalQueries.slice(0, 2)));
+check(
+  "覆盖三类数据库的目录查询",
+  ["information_schema.columns", "pg_index", "pragma_table_info"].every((needle) => dataQueries.some((query) => query.sql.includes(needle))),
+  `queries=${dataQueries.length}`,
+);
+const scopedQueries = dataQueries.filter((query) => !query.sql.includes("information_schema.schemata") && !query.sql.includes("FROM pg_database"));
+check(
+  "表级查询指定库，SQLite 不指定",
+  scopedQueries.filter((query) => query.connectionId === "mysql-main").every((query) => query.database === "shop")
+    && scopedQueries.filter((query) => query.connectionId === "pg-main").every((query) => query.database === "appdb")
+    && dataQueries.filter((query) => query.connectionId === "sqlite-main").every((query) => query.database === undefined),
+  `scoped=${scopedQueries.length}`,
+);
 
 await page.evaluate(() => window.__dbxTest.theme("dark"));
 await page.waitForTimeout(250);

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
+import zlib from "node:zlib";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildFakePicker } from "./fake-picker.mjs";
@@ -133,7 +134,26 @@ async function convert(client, fileName, options = {}, sourceBytes) {
   return { jobId, terminal: terminal.method, params: terminal.params };
 }
 
-function readAll(client, jobId, kind, chunkSize = 65536) {  return (async () => {
+function readZipEntry(buffer, entryName) {
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const method = buffer.readUInt16LE(offset + 8);
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const name = buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8");
+    const dataStart = offset + 30 + nameLength + extraLength;
+    if (name === entryName) {
+      const raw = buffer.subarray(dataStart, dataStart + size);
+      return method === 8 ? zlib.inflateRawSync(raw) : raw;
+    }
+    offset = dataStart + size;
+  }
+  throw new Error(`zip entry not found: ${entryName}`);
+}
+
+function readAll(client, jobId, kind, chunkSize = 65536) {
+  return (async () => {
     let offset = 0;
     const parts = [];
     for (let guard = 0; guard < 10000; guard += 1) {
@@ -508,6 +528,93 @@ async function main() {
   const afterOutputs = fs.readdirSync(outputDir).sort();
   assert.deepEqual(afterOutputs, beforeOutputs);
   pass("discard keeps output files, drops preview");
+
+  // ---------- Data dictionary Word export ----------
+
+  const dictionaryMarkdown = [
+    "# 数据库数据字典：演示库", "",
+    "- 连接：`demo`（mysql）",
+    "- 生成时间：2026-10-26 10:00",
+    "- 范围：`shop`（1 张表）", "",
+    "> 索引信息读取失败（mysql），已跳过。", "",
+    "## 库 `shop`", "", "共 1 张表。", "",
+    "### orders — 订单", "",
+    "| # | 字段 | 类型 | 可空 | 默认值 | 键 | 说明 |",
+    "| ---: | --- | --- | :---: | --- | :---: | --- |",
+    "| 1 | id | bigint | 否 | | PK | 主键 & 唯一 |",
+    "| 2 | created_at | timestamp(3) | 否 | CURRENT_TIMESTAMP(3) | | 创建时间 |",
+    "| 3 | payload | json | 是 | null | | 附加数据 <测试> |", "",
+    "**索引**", "",
+    "| 索引 | 唯一 | 列 |", "| --- | :---: | --- |", "| PRIMARY | 是 | id |", "",
+  ].join("\n");
+
+  async function exportDictionaryDocx(markdown, title) {
+    const bytes = Buffer.from(markdown, "utf8");
+    const begin = await client.request("doc/dictionaryDocxBegin", { size: bytes.length });
+    const chunkSize = 256 * 1024;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      const slice = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+      await client.request("doc/dictionaryDocxChunk", { fileId: begin.fileId, offset, dataBase64: slice.toString("base64") });
+    }
+    return client.request("doc/dictionaryDocxCommit", { fileId: begin.fileId, title });
+  }
+
+  const docxExport = await exportDictionaryDocx(dictionaryMarkdown, "演示库-数据字典");
+  assert.equal(docxExport.name, "演示库-数据字典.docx");
+  assert.ok(docxExport.fileId && docxExport.size > 0, JSON.stringify(docxExport));
+  const docxParts = [];
+  let docxOffset = 0;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const chunk = await client.request("doc/readDictionaryDocx", { fileId: docxExport.fileId, offset: docxOffset, length: 64 * 1024 });
+    docxParts.push(Buffer.from(chunk.dataBase64, "base64"));
+    docxOffset = chunk.offset + chunk.length;
+    if (chunk.eof) break;
+  }
+  const docxBuffer = Buffer.concat(docxParts);
+  assert.equal(docxBuffer.length, docxExport.size);
+  assert.equal(docxBuffer.subarray(0, 2).toString("latin1"), "PK");
+  for (const part of ["[Content_Types].xml", "word/document.xml", "word/styles.xml", "word/_rels/document.xml.rels"]) {
+    assert.ok(docxBuffer.includes(Buffer.from(part, "utf8")), `missing part ${part}`);
+  }
+  const documentXml = readZipEntry(docxBuffer, "word/document.xml").toString("utf8");
+  assert.ok(documentXml.includes("主键 &amp; 唯一"), "table text must be XML-escaped");
+  assert.ok(documentXml.includes("<w:tblHeader/>") && documentXml.includes("<w:cantSplit/>"), "tables must repeat headers and keep rows whole");
+  assert.ok(documentXml.includes('w:pStyle w:val="Heading1"'), "database headings must use the heading style");
+  pass("dictionary docx generated", `${docxExport.size} bytes`);
+
+  const docxRoundTrip = await convert(client, "字典.docx", {}, docxBuffer);
+  assert.equal(docxRoundTrip.terminal, "doc/done", JSON.stringify(docxRoundTrip.params));
+  const docxPreview = await readAll(client, docxRoundTrip.jobId, "preview");
+  assert.ok(docxPreview.includes("数据库数据字典：演示库"), docxPreview.slice(0, 200));
+  assert.ok(docxPreview.includes("orders") && docxPreview.includes("主键") && docxPreview.includes("PRIMARY"), docxPreview.slice(0, 400));
+  pass("dictionary docx opens as a Word document", docxRoundTrip.params.outputs.markdown.name);
+
+  await assert.rejects(
+    client.request("doc/dictionaryDocxBegin", { size: 0 }),
+    (error) => error.code === "badRequest" && /内容为空/.test(error.message),
+  );
+  await assert.rejects(
+    client.request("doc/dictionaryDocxBegin", { size: 7 * 1024 * 1024 }),
+    (error) => error.code === "badRequest" && /过大/.test(error.message),
+  );
+  const outOfOrder = await client.request("doc/dictionaryDocxBegin", { size: 10 });
+  await assert.rejects(
+    client.request("doc/dictionaryDocxChunk", { fileId: outOfOrder.fileId, offset: 5, dataBase64: Buffer.from("hello").toString("base64") }),
+    (error) => error.code === "badRequest" && /顺序/.test(error.message),
+  );
+  await client.request("doc/discardDictionaryDocx", { fileId: outOfOrder.fileId });
+  await assert.rejects(
+    client.request("doc/readDictionaryDocx", { fileId: "../../etc/passwd" }),
+    (error) => error.code === "badRequest",
+  );
+  pass("dictionary docx rejects empty, oversized and unsafe requests");
+
+  await client.request("doc/discardDictionaryDocx", { fileId: docxExport.fileId });
+  await assert.rejects(
+    client.request("doc/readDictionaryDocx", { fileId: docxExport.fileId }),
+    (error) => error.code === "badRequest" && /过期/.test(error.message),
+  );
+  pass("dictionary docx discarded after save");
 
   // ---------- Cloud OCR (mock MinerU + Baidu endpoints) ----------
 

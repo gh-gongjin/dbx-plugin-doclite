@@ -541,6 +541,8 @@ async function main() {
   assert.ok(manifest.permissions.includes("host.storage"));
   assert.ok(manifest.permissions.includes("host.events"));
   assert.ok(manifest.permissions.includes("host.binary"));
+  assert.ok(manifest.permissions.includes("host.connections:read"));
+  assert.ok(manifest.permissions.includes("host.data:read"));
   pass("权限", manifest.permissions.join(", "));
 
   assert.equal(manifest.entrypoints.backend.transport, "stdio-jsonl");

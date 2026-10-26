@@ -1,6 +1,7 @@
 # DocLite for DBX
 
-A DBX workbench plugin that converts documents to Markdown locally. The UI is
+A DBX workbench plugin that converts documents to Markdown locally and exports
+Markdown data dictionaries from databases already connected in DBX. The UI is
 an iframe hosted by DBX; the conversion engine runs in a Node sidecar inside
 the plugin package, so files never leave the machine.
 
@@ -62,10 +63,43 @@ skip dotfiles and symlinks, and stop at 2000 files / 8 levels. Files with
 unsupported extensions are skipped silently (the toast reports how many);
 supported files over 512 MB still show up as failed queue entries.
 
+## Database data dictionary
+
+The toolbar's `数据字典` mode exports a Markdown data dictionary from a
+database that is already open in DBX. It never asks for credentials: the plugin
+lists the saved connections through `host.getConnections` and runs read-only
+catalog queries through `host.queryData` (`host.connections:read` and
+`host.data:read`).
+
+- **Supported**: MySQL family (MySQL, GBase, Doris, StarRocks, GoldenDB),
+  PostgreSQL family (PostgreSQL, GaussDB, openGauss, Kingbase, HighGo,
+  Vastbase, UXDB, GBase 8c, KWDB), and SQLite. Other connection types are
+  listed but disabled.
+- **Scope**: pick any number of databases; the database list and the table list
+  each have their own filter, and tables can be selected individually or per
+  database. A connection that exposes only one database (SQLite, or a server
+  with a single visible database) loads its tables as soon as it is selected.
+- **Consent**: the first query on a connection triggers DBX's one-time
+  read-only grant prompt. Declining leaves no data behind; generating again
+  retries the prompt.
+- **Output**: one Markdown document with the table comment and a column table
+  (type, nullability, default, PK/UK, comment), plus indexes and foreign keys.
+  Copy it, save it as Markdown, or save it as Word (`.docx`) through the host
+  file picker. The Word export styles headings, converts column tables to real
+  Word tables with a repeating header row, and keeps CJK text on a 宋体/Calibri
+  font stack.
+- **Limits**: the connection must be open in DBX, and each query returns at
+  most 5000 rows; results cut by that cap are flagged in the document. Catalog
+  tables that a compatible database does not implement (for example an index
+  view missing from a Doris build) are skipped with a warning instead of
+  failing the whole export.
+
+The mode only reads metadata; it never executes DML.
+
 ## Layout
 
 ```
-manifest.json                 plugin manifest (Host API 1.0)
+manifest.json                 plugin manifest (Host API 1.4)
 ui/                           sandboxed workbench UI
 backend/sidecar.cjs           JSON-RPC sidecar (stdio JSONL)
 backend/markdown-model.cjs    Markdown -> Document Model parser
@@ -85,8 +119,8 @@ node _build/prepare-vendor.mjs   # copy native modules + node.exe from DocLite i
 node _build/build-launcher.mjs   # compile the C# launcher with the in-box csc
 node _build/build-picker.mjs     # compile the C# native folder picker
 node _build/make-samples.mjs     # generate DOCX/PDF/CSV fixtures
-node _build/test-sidecar.mjs     # 51 end-to-end sidecar checks (OCR via local mock)
-node _build/test-ui.mjs          # 101 headless UI checks
+node _build/test-sidecar.mjs     # 55 end-to-end sidecar checks (OCR via local mock)
+node _build/test-ui.mjs          # 150 headless UI checks
 node _build/package.mjs          # dist/dbx-doclite-<version>.dbxp
 ```
 
