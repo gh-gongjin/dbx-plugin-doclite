@@ -1,9 +1,10 @@
 # DocLite for DBX
 
-A DBX workbench plugin that converts documents to Markdown locally and exports
-Markdown data dictionaries from databases already connected in DBX. The UI is
-an iframe hosted by DBX; the conversion engine runs in a Node sidecar inside
-the plugin package, so files never leave the machine.
+A DBX workbench plugin that converts documents to Markdown locally, exports the
+result as a Word document, and exports Markdown data dictionaries from databases
+already connected in DBX. The UI is an iframe hosted by DBX; the conversion
+engine runs in a Node sidecar inside the plugin package, so files never leave
+the machine.
 
 ## Supported inputs
 
@@ -73,8 +74,15 @@ catalog queries through `host.queryData` (`host.connections:read` and
 
 - **Supported**: MySQL family (MySQL, GBase, Doris, StarRocks, GoldenDB),
   PostgreSQL family (PostgreSQL, GaussDB, openGauss, Kingbase, HighGo,
-  Vastbase, UXDB, GBase 8c, KWDB), and SQLite. Other connection types are
+  Vastbase, UXDB, GBase 8c, KWDB), SQLite, SQL Server, Oracle family (Oracle,
+  OceanBase Oracle mode, 达梦 DM), and ClickHouse. Other connection types are
   listed but disabled.
+- **Oracle-family notes**: Oracle, OceanBase Oracle mode and DM have no
+  database list to browse, so the schemas visible in `ALL_USERS` are shown as
+  模式 and the export is titled with 模式; catalog reads filter by `OWNER` and
+  never switch the session schema. ClickHouse has no foreign keys, so its
+  sorting-key columns are listed as a synthetic `PRIMARY` index and no
+  foreign-key warning is emitted.
 - **Scope**: pick any number of databases; the database list and the table list
   each have their own filter, and tables can be selected individually or per
   database. A connection that exposes only one database (SQLite, or a server
@@ -96,6 +104,33 @@ catalog queries through `host.queryData` (`host.connections:read` and
 
 The mode only reads metadata; it never executes DML.
 
+## Word export
+
+Every converted document can be saved as a Word file (`.docx`) — the entry is
+generic, it is not limited to PDFs or to the data dictionary.
+
+- **保存 Word** (preview header) writes the current document through the host
+  file panel, so the save location is chosen by DBX itself.
+- **全部保存 Word** (queue footer) asks for a folder once through the plugin's
+  native picker and writes every finished document straight into it. Files with
+  the same name never overwrite each other: the second one becomes
+  `<name>-2.docx`.
+- The **Word 版式** preview tab renders the same document model the exporter
+  consumes, so what is shown matches what is written. It is labelled
+  `版式估算` because the final pagination and line breaks follow Word's own
+  layout engine.
+
+Limits, stated in the `还原说明` dialog as well:
+
+- **Images are not embedded.** The conversion pipeline keeps the alt text of an
+  image and drops the binary, so the exported `.docx` contains no `word/media`
+  part. Only the caption survives.
+- The layout tab is an estimate, not a pixel-perfect rendering of the source
+  document.
+- The export reproduces headings, paragraphs, lists, tables, quotes, code
+  blocks and rules; inline emphasis is flattened to plain text.
+- The whole path runs locally; nothing is uploaded.
+
 ## Layout
 
 ```
@@ -103,6 +138,8 @@ manifest.json                 plugin manifest (Host API 1.4)
 ui/                           sandboxed workbench UI
 backend/sidecar.cjs           JSON-RPC sidecar (stdio JSONL)
 backend/markdown-model.cjs    Markdown -> Document Model parser
+backend/docx-writer.cjs       Markdown -> .docx writer (shared by the dictionary
+                               export and the document export)
 backend/vendor/               anydoc, pdf-inspector, pdfium + jpeg-js (OCR page
                                rendering), portable Node runtime
 bin/windows-x64/              stdio-forwarding launcher declared in the manifest
@@ -119,8 +156,8 @@ node _build/prepare-vendor.mjs   # copy native modules + node.exe from DocLite i
 node _build/build-launcher.mjs   # compile the C# launcher with the in-box csc
 node _build/build-picker.mjs     # compile the C# native folder picker
 node _build/make-samples.mjs     # generate DOCX/PDF/CSV fixtures
-node _build/test-sidecar.mjs     # 55 end-to-end sidecar checks (OCR via local mock)
-node _build/test-ui.mjs          # 150 headless UI checks
+node _build/test-sidecar.mjs     # 61 end-to-end sidecar checks (OCR via local mock)
+node _build/test-ui.mjs          # 197 headless UI checks
 node _build/package.mjs          # dist/dbx-doclite-<version>.dbxp
 ```
 

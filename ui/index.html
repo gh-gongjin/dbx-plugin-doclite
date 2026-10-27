@@ -800,6 +800,128 @@
   .ocr-test-status[data-state="error"] { color: var(--danger); }
   .ocr-test-status[data-state="testing"] { color: var(--muted); }
 
+  /* Word export */
+  .btn-word { border-color: #c8d7f0; color: #2b579a; }
+  .btn-word:hover:not(:disabled) { border-color: #2b579a; background: #f3f7fd; color: #1f4a8f; }
+  html[data-theme="dark"] .btn-word { border-color: rgba(120, 160, 220, 0.38); color: #8fb4ec; }
+  html[data-theme="dark"] .btn-word:hover:not(:disabled) { background: rgba(96, 165, 250, 0.14); color: #bcd4f8; }
+  .btn-word.saved { border-color: var(--success); color: var(--success); }
+  .btn-word.saved:hover:not(:disabled) { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .word-mark {
+    width: 15px; height: 15px; flex: none;
+    display: grid; place-items: center;
+    border-radius: 2px; background: #2b579a; color: #fff;
+    font-size: 9px; font-weight: 700; line-height: 1;
+  }
+  .btn-word.saved .word-mark { background: var(--success); }
+  .queue-foot-actions { display: flex; align-items: center; gap: 2px; }
+
+  /* Word layout preview */
+  .word-view { min-height: 100%; padding-bottom: 34px; background: var(--sidebar); }
+  .fidelity-bar {
+    position: sticky; top: 0; z-index: 6;
+    display: flex; align-items: center; gap: 8px;
+    height: 32px; padding: 0 10px 0 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 10.5px; color: var(--muted);
+  }
+  .fidelity-bar .icon { width: 12px; height: 12px; color: var(--info); }
+  .fidelity-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fidelity-text b { color: var(--text-2); font-weight: 600; }
+  .fidelity-bar .spacer { flex: 1; }
+  .fidelity-link { border: 0; background: transparent; color: var(--info); font-size: 10.5px; padding: 2px 5px; border-radius: 3px; }
+  .fidelity-link:hover { background: var(--info-bg); }
+  .word-sheet {
+    position: relative;
+    width: min(720px, calc(100% - 44px));
+    min-height: 1018px;
+    margin: 22px auto 0;
+    padding: 58px 62px 46px;
+    background: #ffffff; color: #111111;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    font-family: Calibri, "SimSun", "宋体", serif;
+    font-size: 13px; line-height: 1.5;
+  }
+  html[data-theme="dark"] .word-sheet { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
+  .sheet-caption { text-align: center; margin: 8px auto 0; width: min(720px, calc(100% - 44px)); font-size: 10px; color: var(--muted); }
+  .ws-title { margin: 0 0 6px; font-size: 26px; line-height: 1.18; font-weight: 700; letter-spacing: -0.01em; }
+  .ws-h1 { margin: 22px 0 8px; font-size: 19px; line-height: 1.3; font-weight: 700; }
+  .ws-h2 { margin: 18px 0 6px; font-size: 16px; line-height: 1.35; font-weight: 700; }
+  .ws-h3 { margin: 15px 0 5px; font-size: 14px; line-height: 1.4; font-weight: 700; }
+  .ws-p { margin: 0 0 8px; text-align: justify; }
+  .ws-list { margin: 0 0 10px; }
+  .ws-list-item { margin: 0 0 3px; }
+  .ws-quote {
+    margin: 10px 0 12px; padding: 7px 12px;
+    border-left: 3px solid #d0d7de; color: #57606a; font-style: italic;
+  }
+  .ws-code {
+    margin: 8px 0 12px; padding: 8px 10px;
+    background: #f2f4f7; border-radius: 2px;
+    font-family: Consolas, "Courier New", monospace; font-size: 10.5px; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .ws-table { width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.45; margin: 6px 0 12px; }
+  .ws-table th { background: #f2f4f7; font-weight: 700; text-align: left; }
+  .ws-table th, .ws-table td { border: 1px solid #d0d7de; padding: 4px 7px; vertical-align: middle; }
+  .ws-table td.num { text-align: right; }
+  .ws-hr { border: 0; border-top: 1px solid #d0d7de; margin: 14px 0; }
+
+  /* Word dialogs */
+  .word-layer {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .word-layer[hidden] { display: none; }
+  .word-scrim { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.24); }
+  html[data-theme="dark"] .word-scrim { background: rgba(0, 0, 0, 0.55); }
+  .word-dialog {
+    position: relative; width: min(620px, 100%); max-height: calc(100vh - 80px);
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: var(--shadow);
+  }
+  .word-dialog.narrow { width: min(438px, 100%); }
+  .word-head {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 12px 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .word-dialog-title { font-size: 13px; font-weight: 650; }
+  .word-dialog-sub { margin-top: 3px; font-size: 10px; line-height: 1.55; color: var(--muted); }
+  .word-dialog-body { padding: 14px 16px; overflow: auto; }
+  .word-dialog-foot {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 12px 12px 16px; border-top: 1px solid var(--border);
+  }
+  .word-dialog-foot .spacer { flex: 1; }
+  .keep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .keep-col { border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 10px 11px; }
+  .keep-col h4 { margin: 0 0 7px; font-size: 10.5px; font-weight: 650; letter-spacing: 0.03em; }
+  .keep-col.keep h4 { color: var(--success); }
+  .keep-col.drop h4 { color: var(--warning); }
+  .keep-col ul { margin: 0; padding-left: 15px; }
+  .keep-col li { margin: 4px 0; font-size: 10.5px; color: var(--text-2); line-height: 1.55; }
+  .word-note { margin: 11px 0 0; font-size: 10.5px; line-height: 1.6; color: var(--muted); }
+  .save-list { display: flex; flex-direction: column; gap: 6px; }
+  .save-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 9px;
+    border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+    font-size: 11.5px; color: var(--text);
+  }
+  .save-item span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .save-item em { font-style: normal; font-size: 10.5px; color: var(--muted); }
+  .save-chip {
+    width: 15px; height: 15px; flex: none;
+    display: grid; place-items: center;
+    border-radius: 2px; background: #2b579a; color: #fff;
+    font-size: 9px; font-weight: 700; line-height: 1;
+  }
+  .save-hint { margin: 11px 0 0; font-size: 10.5px; line-height: 1.6; color: var(--muted); }
+
   /* toast */
   .toast-wrap {
     position: fixed; left: 50%; bottom: 18px; z-index: 90;
@@ -932,7 +1054,10 @@
       <div class="file-list" id="fileList" role="listbox" aria-label="待转换文件"></div>
       <div class="queue-foot">
         <span id="queueFootText">0 个文件</span>
-        <button class="text-btn" id="clearBtn" type="button">清空</button>
+        <div class="queue-foot-actions">
+          <button class="text-btn" id="saveAllWordBtn" type="button" disabled>全部保存 Word</button>
+          <button class="text-btn" id="clearBtn" type="button">清空</button>
+        </div>
       </div>
     </aside>
 
@@ -942,11 +1067,13 @@
         <div class="preview-actions">
           <button class="btn btn-quiet" id="copyBtn" type="button" title="复制当前内容"><svg class="icon"><use href="#i-copy"/></svg><span>复制</span></button>
           <button class="btn btn-quiet" id="saveBtn" type="button" title="保存当前格式"><svg class="icon"><use href="#i-save"/></svg><span>保存</span></button>
+          <button class="btn btn-quiet btn-word" id="wordBtn" type="button" title="保存为 Word 文档（.docx）" disabled><span class="word-mark">W</span><span id="wordBtnText">保存 Word</span></button>
           <button class="icon-btn" id="removeBtn" type="button" title="移出队列"><svg class="icon"><use href="#i-trash"/></svg></button>
         </div>
       </div>
       <div class="preview-tabs" role="tablist" aria-label="预览视图">
         <button class="tab active" data-tab="preview" role="tab" type="button">预览</button>
+        <button class="tab" data-tab="word" role="tab" type="button">Word 版式</button>
         <button class="tab" data-tab="markdown" role="tab" type="button">Markdown</button>
         <button class="tab" data-tab="json" role="tab" type="button">JSON</button>
         <button class="tab" data-tab="structure" role="tab" type="button">结构</button>
@@ -1148,6 +1275,72 @@
   </div>
 </div>
 
+<div class="word-layer" id="wordLayer" hidden>
+  <div class="word-scrim" id="wordScrim"></div>
+  <div class="word-dialog" role="dialog" aria-modal="true" aria-labelledby="wordDialogTitle">
+    <div class="word-head">
+      <div style="flex:1;min-width:0">
+        <div class="word-dialog-title" id="wordDialogTitle">Word 还原说明</div>
+        <div class="word-dialog-sub">导出前先看清楚哪些内容会保留、哪些会丢失。</div>
+      </div>
+      <button class="icon-btn" id="closeWordDialog" type="button" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="word-dialog-body">
+      <div class="keep-grid">
+        <div class="keep-col keep">
+          <h4>会保留</h4>
+          <ul>
+            <li>标题层级（映射为 Word 内置标题样式，可直接生成目录）</li>
+            <li>段落、加粗、行内代码（等宽字体）</li>
+            <li>项目符号与编号列表（按缩进层级还原）</li>
+            <li>表格：边框、表头底色、表头跨页重复、行不跨页</li>
+            <li>引用块、代码块（等宽字体 + 浅色底纹）</li>
+            <li>字体：中文宋体、西文 Calibri，A4 纵向、页边距 2cm</li>
+          </ul>
+        </div>
+        <div class="keep-col drop">
+          <h4>不会保留</h4>
+          <ul>
+            <li>图片：源文档中的图片暂不嵌入，仅保留图注</li>
+            <li>页眉、页脚与页码</li>
+            <li>多栏排版（按单栏顺序重排）</li>
+            <li>合并单元格（拆成普通表格）</li>
+            <li>水印、背景色与精确分页位置</li>
+            <li>扫描件内容（需先启用 OCR 识别）</li>
+          </ul>
+        </div>
+      </div>
+      <p class="word-note">“Word 版式”页展示的是版式估算，最终分页、换行与字体回退以 Word 打开后的实际排版为准。转换与导出全程在本机完成，不上传文件。</p>
+    </div>
+    <div class="word-dialog-foot">
+      <span class="spacer"></span>
+      <button class="btn btn-primary" id="confirmWordDialog" type="button">知道了</button>
+    </div>
+  </div>
+</div>
+
+<div class="word-layer" id="wordBatchLayer" hidden>
+  <div class="word-scrim" id="wordBatchScrim"></div>
+  <div class="word-dialog narrow" role="dialog" aria-modal="true" aria-labelledby="wordBatchTitle">
+    <div class="word-head">
+      <div style="flex:1;min-width:0">
+        <div class="word-dialog-title" id="wordBatchTitle">批量保存为 Word</div>
+        <div class="word-dialog-sub" id="wordBatchSub">每个文件生成一个 .docx。</div>
+      </div>
+      <button class="icon-btn" id="closeWordBatch" type="button" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="word-dialog-body">
+      <div class="save-list" id="wordBatchList"></div>
+      <p class="save-hint">下一步会让你选择一个保存文件夹，所有文件都会写进这个文件夹；同名文件会自动加序号，不会覆盖已有内容。</p>
+    </div>
+    <div class="word-dialog-foot">
+      <span class="spacer"></span>
+      <button class="btn" id="cancelWordBatch" type="button">取消</button>
+      <button class="btn btn-primary" id="confirmWordBatch" type="button">选择文件夹</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 
 <script>
@@ -1218,8 +1411,14 @@
     mysql: "mysql", gbase: "mysql", doris: "mysql", starrocks: "mysql", goldendb: "mysql",
     postgres: "postgres", gaussdb: "postgres", opengauss: "postgres", kingbase: "postgres",
     highgo: "postgres", vastbase: "postgres", uxdb: "postgres", gbase8c: "postgres", kwdb: "postgres",
-    sqlite: "sqlite"
+    sqlite: "sqlite",
+    sqlserver: "sqlserver",
+    oracle: "oracle", "oceanbase-oracle": "oracle", dameng: "oracle",
+    clickhouse: "clickhouse"
   };
+  // Oracle and DM have no database list to browse: their "databases" are the
+  // schemas visible in ALL_USERS, so the UI calls that level 模式 instead of 库.
+  const DICTIONARY_SCHEMA_FAMILIES = new Set(["oracle"]);
   const DICTIONARY_QUERY_ROWS = 5000;
   const DICTIONARY_TABLE_CHUNK = 40;
 
@@ -1246,6 +1445,8 @@
     settingsTimer: null,
     pickSession: null,
     lastInputDir: "",
+    wordSaving: false,
+    wordBatch: [],
     ocr: { ...DEFAULT_OCR_STATE, mineru: { ...DEFAULT_OCR_STATE.mineru }, baidu: { ...DEFAULT_OCR_STATE.baidu } },
     ocrTesting: false,
     ocrSaving: false,
@@ -1439,6 +1640,13 @@
         ? `${state.files.length} 个文件 · ${formatBytes(total)}${picked ? ` · 已选 ${picked}` : ""}`
         : "队列为空";
     }
+    const saveAll = $("#saveAllWordBtn");
+    if (saveAll) {
+      const ready = state.files.filter((file) => file.status === "done" && file.markdown).length;
+      saveAll.disabled = state.wordSaving || ready === 0;
+      saveAll.textContent = state.wordSaving ? "正在生成…" : "全部保存 Word";
+      saveAll.title = ready ? `把 ${ready} 个已转换文档导出为 Word` : "还没有可导出的文档";
+    }
   }
 
   function renderQueue() {
@@ -1483,6 +1691,7 @@
     const identity = $("#previewIdentity");
     const copyBtn = $("#copyBtn");
     const saveBtn = $("#saveBtn");
+    const wordBtn = $("#wordBtn");
     const removeBtn = $("#removeBtn");
     const tabs = $$(".tab");
     const meta = $("#tabsMeta");
@@ -1496,9 +1705,11 @@
         </span>`;
       copyBtn.disabled = true;
       saveBtn.disabled = true;
+      wordBtn.disabled = true;
       removeBtn.disabled = true;
       tabs.forEach((tab) => { tab.disabled = true; });
       meta.textContent = "";
+      renderWordButton(null);
       renderEmpty();
       return;
     }
@@ -1513,7 +1724,9 @@
     const done = file.status === "done";
     copyBtn.disabled = !done;
     saveBtn.disabled = !done;
+    saveBtn.title = state.tab === "word" ? "保存为 Word 文档（.docx）" : "保存当前格式";
     removeBtn.disabled = state.converting && file.status === "converting";
+    renderWordButton(file);
     tabs.forEach((tab) => {
       tab.disabled = !done;
       tab.classList.toggle("active", tab.dataset.tab === state.tab);
@@ -1527,6 +1740,27 @@
     }
 
     renderPreviewBody(file);
+  }
+
+  function renderWordButton(file) {
+    const button = $("#wordBtn");
+    const label = $("#wordBtnText");
+    if (!button || !label) return;
+    if (!file) {
+      button.disabled = true;
+      button.classList.remove("saved");
+      label.textContent = "保存 Word";
+      button.title = "转换完成后可保存 Word";
+      return;
+    }
+    const done = file.status === "done";
+    const hasText = Boolean(file.markdown && file.markdown.trim());
+    button.disabled = !done || !hasText || Boolean(file.wordSaving) || state.wordSaving;
+    button.classList.toggle("saved", Boolean(file.wordSaved) && !file.wordSaving);
+    label.textContent = file.wordSaving ? "生成中…" : file.wordSaved ? "已保存 Word" : "保存 Word";
+    if (!done) button.title = "转换完成后可保存 Word";
+    else if (!hasText) button.title = "未识别到文字，启用 OCR 重新转换后可保存 Word";
+    else button.title = "保存为 Word 文档（.docx）";
   }
 
   function renderEmpty() {
@@ -1652,6 +1886,32 @@
       return;
     }
 
+    if (state.tab === "word") {
+      const model = file.model;
+      if (!model) {
+        body.innerHTML = statePanel({
+          cls: file.modelError ? "danger" : "",
+          icon: `<svg class="icon icon-lg"><use href="#i-doc"/></svg>`,
+          title: file.modelError ? "Document Model 加载失败" : "正在加载 Word 版式",
+          desc: file.modelError || "请稍候…",
+          actions: `<button class="btn btn-primary" type="button" data-retry-preview>重新加载</button>`
+        });
+        bindStateActions(file, body);
+        if (!file.modelError && !file.modelLoading) {
+          file.modelLoading = true;
+          void loadOutputs(file).then(() => {
+            file.modelLoading = false;
+            if (state.tab === "word" && getSelected() === file) renderPreviewBody(file);
+          });
+        }
+        return;
+      }
+      body.innerHTML = renderWordView(file);
+      const fidelity = $("#openWordFidelity");
+      if (fidelity) fidelity.addEventListener("click", openWordFidelity);
+      return;
+    }
+
     if (state.tab === "markdown") {
       body.innerHTML = `
         <div class="code-view">
@@ -1717,6 +1977,202 @@
     body.innerHTML = `
       ${warnings.length ? `<div class="doc-warning"><svg class="icon"><use href="#i-alert"/></svg><span>${escapeHtml(warnings.join(" "))}</span></div>` : ""}
       <div class="doc-sheet"><article class="prose">${renderMarkdown(file.markdown || "")}</article></div>`;
+  }
+
+  function renderWordView(file) {
+    const blocks = Array.isArray(file.model?.blocks) ? file.model.blocks : [];
+    if (!blocks.length) {
+      return statePanel({
+        icon: `<svg class="icon icon-lg"><use href="#i-doc"/></svg>`,
+        title: "没有可预览的版式内容",
+        desc: "这份文档转换后没有产生任何内容块。",
+        actions: `<button class="btn" type="button" data-retry-preview>重新加载</button>`
+      });
+    }
+    return `
+      <div class="word-view">
+        <div class="fidelity-bar">
+          <svg class="icon"><use href="#i-alert"/></svg>
+          <span class="fidelity-text">版式估算 · <b>图片不嵌入</b>，仅保留图注</span>
+          <span class="spacer"></span>
+          <button class="fidelity-link" id="openWordFidelity" type="button">还原说明</button>
+        </div>
+        <div class="word-sheet">${blocks.map((block) => renderWordBlock(block)).join("\n")}</div>
+        <div class="sheet-caption">A4 纵向 · 页边距 2cm · 中文宋体 / 西文 Calibri · 最终分页与换行以 Word 打开后为准</div>
+      </div>`;
+  }
+
+  function renderWordBlock(block) {
+    switch (block.type) {
+      case "heading": {
+        const level = Math.min(Math.max(Number(block.level) || 1, 1), 6);
+        const tag = level <= 3 ? `h${level}` : "h4";
+        const cls = level === 1 ? "ws-title" : level === 2 ? "ws-h1" : level === 3 ? "ws-h2" : "ws-h3";
+        return `<${tag} class="${cls}">${escapeHtml(block.text || "")}</${tag}>`;
+      }
+      case "paragraph": {
+        const text = escapeHtml(block.text || "");
+        const bold = /^\*\*[^*]+\*\*$/.test(String(block.markdown || "").trim());
+        return `<p class="ws-p">${bold ? `<strong>${text}</strong>` : text}</p>`;
+      }
+      case "list": {
+        const items = Array.isArray(block.items) ? block.items : [];
+        const rows = items.map((item, index) => {
+          const marker = block.ordered ? `${index + 1}. ` : "• ";
+          const indent = 27 + (Number(item.level) || 0) * 22;
+          return `<p class="ws-list-item" style="padding-left:${indent}px">${escapeHtml(`${marker}${item.text || ""}`)}</p>`;
+        }).join("");
+        return `<div class="ws-list">${rows}</div>`;
+      }
+      case "table": {
+        const header = Array.isArray(block.header) ? block.header : [];
+        const rows = Array.isArray(block.rows) ? block.rows : [];
+        return `<table class="ws-table"><thead><tr>${header.map((cell) => `<th>${escapeHtml(String(cell ?? ""))}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(String(cell ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+      }
+      case "blockQuote":
+        return `<blockquote class="ws-quote">${escapeHtml(block.text || "")}</blockquote>`;
+      case "codeBlock":
+        return `<pre class="ws-code">${escapeText(block.text || "")}</pre>`;
+      case "thematicBreak":
+        return `<hr class="ws-hr" />`;
+      default:
+        return block.text ? `<p class="ws-p">${escapeHtml(block.text)}</p>` : "";
+    }
+  }
+
+  function openWordFidelity() {
+    $("#wordLayer").hidden = false;
+  }
+
+  function closeWordFidelity() {
+    $("#wordLayer").hidden = true;
+  }
+
+  function openWordBatchDialog(files) {
+    state.wordBatch = files.slice();
+    $("#wordBatchList").innerHTML = files.map((file) => `
+      <div class="save-item">
+        <span class="save-chip">W</span>
+        <span title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+        <em>${escapeHtml(baseName(file.name))}.docx</em>
+      </div>`).join("");
+    $("#wordBatchSub").textContent = `共 ${files.length} 个文件，每个生成一个 .docx。`;
+    $("#wordBatchLayer").hidden = false;
+  }
+
+  function closeWordBatchDialog() {
+    $("#wordBatchLayer").hidden = true;
+    state.wordBatch = [];
+  }
+
+  async function uploadMarkdownToWord(fileId, markdown) {
+    const bytes = new TextEncoder().encode(markdown);
+    for (let offset = 0; offset < bytes.length; offset += UPLOAD_CHUNK_BYTES) {
+      const slice = bytes.subarray(offset, offset + UPLOAD_CHUNK_BYTES);
+      await host.invoke("doc/wordChunk", { fileId, offset, dataBase64: encodeBase64(slice) }, { timeoutMs: 60000 });
+    }
+  }
+
+  async function exportWordToFolder(file, dir) {
+    let fileId = null;
+    try {
+      const bytes = new TextEncoder().encode(file.markdown);
+      const begin = await host.invoke("doc/wordBegin", { size: bytes.length }, { timeoutMs: 20000 });
+      fileId = String(begin && begin.fileId ? begin.fileId : "");
+      if (!fileId) throw new Error("Word 转换服务未返回任务标识。");
+      await uploadMarkdownToWord(fileId, file.markdown);
+      await host.invoke("doc/wordCommit", { fileId, title: baseName(file.name), outputDir: dir }, { timeoutMs: 120000 });
+      return true;
+    } catch (error) {
+      showToast(`${file.name} 导出失败：${errorText(error)}`);
+      return false;
+    } finally {
+      if (fileId) {
+        try { await host.invoke("doc/discardWord", { fileId }, { timeoutMs: 10000 }); } catch { /* best effort */ }
+      }
+    }
+  }
+
+  async function saveWordCurrent() {
+    const file = getSelected();
+    if (!file || file.status !== "done" || file.wordSaving || state.wordSaving) return;
+    if (!file.markdown || !file.markdown.trim()) {
+      showToast("没有可导出的内容");
+      return;
+    }
+    file.wordSaving = true;
+    renderPreview();
+    let fileId = null;
+    try {
+      const bytes = new TextEncoder().encode(file.markdown);
+      const begin = await host.invoke("doc/wordBegin", { size: bytes.length }, { timeoutMs: 20000 });
+      fileId = String(begin && begin.fileId ? begin.fileId : "");
+      if (!fileId) throw new Error("Word 转换服务未返回任务标识。");
+      await uploadMarkdownToWord(fileId, file.markdown);
+      const created = await host.invoke("doc/wordCommit", { fileId, title: baseName(file.name) }, { timeoutMs: 120000 });
+      const data = await readBinary("doc/readWord", { fileId });
+      if (!data.length) throw new Error("生成的 Word 文件为空。");
+      const name = created && created.name ? String(created.name) : `${baseName(file.name)}.docx`;
+      const saved = await saveBytes(name, DOCX_MIME, data);
+      file.wordSaved = Boolean(saved);
+      file.wordSaving = false;
+      renderPreview();
+      showToast(saved ? `已保存 ${name}` : "已取消保存");
+    } catch (error) {
+      file.wordSaving = false;
+      renderPreview();
+      showToast(`保存 Word 失败：${errorText(error)}`);
+    } finally {
+      if (fileId) {
+        try { await host.invoke("doc/discardWord", { fileId }, { timeoutMs: 10000 }); } catch { /* best effort */ }
+      }
+    }
+  }
+
+  async function confirmWordBatch() {
+    const files = state.wordBatch.slice();
+    closeWordBatchDialog();
+    if (!files.length) return;
+    state.wordSaving = true;
+    render();
+    let dir = "";
+    try {
+      const picked = await runFolderPicker("");
+      if (picked.canceled) {
+        showToast(picked.error ? errorText(picked.error) : "已取消保存");
+        return;
+      }
+      dir = picked.path;
+      let saved = 0;
+      for (const file of files) {
+        const ok = await exportWordToFolder(file, dir);
+        if (ok) {
+          file.wordSaved = true;
+          saved += 1;
+        }
+      }
+      state.wordSaving = false;
+      render();
+      showToast(`已保存 ${saved} 个 Word 文件`, {
+        actionLabel: "打开目录",
+        onAction: () => { void host.invoke("doc/reveal", { dir }, { timeoutMs: 15000 }).catch(() => {}); }
+      });
+    } catch (error) {
+      showToast(`批量保存失败：${errorText(error)}`);
+    } finally {
+      state.wordSaving = false;
+      render();
+    }
+  }
+
+  function saveAllWords() {
+    if (state.wordSaving) return;
+    const ready = state.files.filter((file) => file.status === "done" && file.markdown && file.markdown.trim());
+    if (!ready.length) {
+      showToast("还没有可导出的文档");
+      return;
+    }
+    openWordBatchDialog(ready);
   }
 
   function renderSettings() {
@@ -2018,7 +2474,10 @@
         errorCode: null,
         needsOcrPages: [],
         previewError: null,
-        modelError: null
+        modelError: null,
+        modelLoading: false,
+        wordSaving: false,
+        wordSaved: false
       };
       state.files.push(file);
       added += 1;
@@ -2556,6 +3015,10 @@
   async function saveCurrent() {
     const file = getSelected();
     if (!file || file.status !== "done") return;
+    if (state.tab === "word") {
+      await saveWordCurrent();
+      return;
+    }
     const isJson = state.tab === "json";
     if (isJson && !file.model) await loadOutputs(file);
     if (isJson && !file.model) { showToast(file.modelError || "Document Model 尚未加载"); return; }
@@ -3028,6 +3491,10 @@
     return DICTIONARY_FAMILIES[String(connection?.dbType || "").toLowerCase()] || "";
   }
 
+  function dictionaryDatabaseWord(family) {
+    return DICTIONARY_SCHEMA_FAMILIES.has(family) ? "模式" : "库";
+  }
+
   function dictionaryErrorText(error) {
     const message = errorText(error);
     if (message.includes("PLUGIN_DATA_ACCESS_NOT_GRANTED")) {
@@ -3076,6 +3543,19 @@
     if (family === "postgres") {
       return "SELECT datname AS name FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY datname";
     }
+    if (family === "sqlserver") {
+      return "SELECT name FROM sys.databases WHERE database_id > 4 AND state_desc = 'ONLINE' AND HAS_DBACCESS(name) = 1 ORDER BY name";
+    }
+    if (family === "oracle") {
+      // ALL_USERS also lists internal accounts; this is the same system list
+      // DBX's own Oracle agent hides from its schema picker. The current user
+      // is kept (and sorted first) so a DBA connected as a system account can
+      // still pick its own schema.
+      return "SELECT username AS name FROM all_users WHERE (username NOT IN ('SYS', 'SYSTEM', 'SYSMAN', 'DBSNMP', 'SYSBACKUP', 'SYSDG', 'SYSKM', 'SYSRAC', 'OUTLN', 'AUDSYS', 'LBACSYS', 'DVF', 'DVSYS', 'APPQOSSYS', 'CTXSYS', 'MDSYS', 'MDDATA', 'ORDSYS', 'ORDATA', 'ORDPLUGINS', 'XDB', 'ANONYMOUS', 'EXFSYS', 'GSMADMIN_INTERNAL', 'GSMCATUSER', 'GSMROOTUSER', 'GSMUSER', 'OJVMSYS', 'OLAPSYS', 'ORACLE_OCM', 'SI_INFORMTN_SCHEMA', 'WMSYS', 'DBSFWUSER', 'REMOTE_SCHEDULER_AGENT', 'FLOWS_FILES', 'APEX_PUBLIC_USER', 'SYSDBA', 'SYSAUDITOR', 'SYSSSO', 'SYSOBJ', 'SYSJOB') AND username NOT LIKE 'APEX_%' AND username NOT LIKE 'FLOWS_%' AND username NOT LIKE '%$%') OR username = USER ORDER BY CASE WHEN username = USER THEN 0 ELSE 1 END, username";
+    }
+    if (family === "clickhouse") {
+      return "SELECT name FROM system.databases WHERE name NOT IN ('system', 'INFORMATION_SCHEMA', 'information_schema') ORDER BY name";
+    }
     return "";
   }
 
@@ -3085,6 +3565,16 @@
     }
     if (family === "postgres") {
       return "SELECT n.nspname AS schema_name, c.relname AS name, obj_description(c.oid, 'pg_class') AS comment FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp%' ORDER BY n.nspname, c.relname";
+    }
+    if (family === "sqlserver") {
+      // Runs inside the selected database, so sys.tables is scoped to it.
+      return "SELECT s.name AS schema_name, t.name AS name, CAST(ep.value AS NVARCHAR(4000)) AS comment FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.extended_properties ep ON ep.major_id = t.object_id AND ep.minor_id = 0 AND ep.name = 'MS_Description' WHERE t.is_ms_shipped = 0 ORDER BY s.name, t.name";
+    }
+    if (family === "oracle") {
+      return `SELECT t.owner AS schema_name, t.table_name AS name, c.comments AS comment FROM all_tables t LEFT JOIN all_tab_comments c ON c.owner = t.owner AND c.table_name = t.table_name WHERE t.owner = ${dictionarySqlLiteral(database)} AND t.table_name NOT LIKE 'BIN$%' ORDER BY t.table_name`;
+    }
+    if (family === "clickhouse") {
+      return `SELECT database AS schema_name, name AS name, comment AS comment FROM system.tables WHERE database = ${dictionarySqlLiteral(database)} AND is_temporary = 0 AND engine NOT IN ('View', 'MaterializedView') ORDER BY name`;
     }
     return "SELECT name, '' AS comment FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
   }
@@ -3153,6 +3643,102 @@
       );
     }
     return queries;
+  }
+
+  // Reused by SQL Server and Oracle: both name tables by (schema, table), so a
+  // chunk of 40 tables can span several schemas.
+  function dictionaryScope(tables, schemaExpr, tableExpr, fallbackSchema) {
+    const groups = new Map();
+    for (const table of tables) {
+      const schema = table.schema || fallbackSchema;
+      if (!groups.has(schema)) groups.set(schema, []);
+      groups.get(schema).push(dictionarySqlLiteral(table.name));
+    }
+    return [...groups]
+      .map(([schema, names]) => `(${schemaExpr} = ${dictionarySqlLiteral(schema)} AND ${tableExpr} IN (${names.join(", ")}))`)
+      .join(" OR ");
+  }
+
+  function dictionarySqlserverQueries(tables) {
+    const columnScope = dictionaryScope(tables, "s.name", "t.name", "dbo");
+    const indexScope = dictionaryScope(tables, "s.name", "t.name", "dbo");
+    const keyScope = dictionaryScope(tables, "fs.name", "ft.name", "dbo");
+    return [
+      {
+        kind: "columns",
+        sql: `SELECT s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name + CASE WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') AND c.max_length = -1 THEN '(max)' WHEN ty.name IN ('nvarchar', 'nchar') AND c.max_length = -1 THEN '(max)' WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN '(' + CONVERT(varchar(10), c.max_length) + ')' WHEN ty.name IN ('nvarchar', 'nchar') THEN '(' + CONVERT(varchar(10), c.max_length / 2) + ')' WHEN ty.name IN ('decimal', 'numeric') THEN '(' + CONVERT(varchar(10), c.precision) + ',' + CONVERT(varchar(10), c.scale) + ')' WHEN ty.name IN ('datetime2', 'time', 'datetimeoffset') THEN '(' + CONVERT(varchar(10), c.scale) + ')' ELSE '' END AS data_type, CAST(c.is_nullable AS int) AS is_nullable, dc.definition AS column_default, CAST(ep.value AS NVARCHAR(4000)) AS column_comment, c.column_id AS ordinal_position, CASE WHEN pk.column_id IS NULL THEN 0 ELSE 1 END AS primary_key FROM sys.columns c JOIN sys.tables t ON t.object_id = c.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.types ty ON ty.user_type_id = c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.object_id = c.default_object_id LEFT JOIN sys.extended_properties ep ON ep.major_id = c.object_id AND ep.minor_id = c.column_id AND ep.name = 'MS_Description' LEFT JOIN (SELECT ic.object_id, ic.column_id FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id WHERE i.is_primary_key = 1) pk ON pk.object_id = c.object_id AND pk.column_id = c.column_id WHERE t.is_ms_shipped = 0 AND (${columnScope}) ORDER BY s.name, t.name, c.column_id`
+      },
+      {
+        kind: "indexes",
+        sql: `SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, CAST(i.is_unique AS int) AS is_unique, CAST(i.is_primary_key AS int) AS is_primary, c.name AS column_name, ic.key_ordinal AS ordinal_position FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.name IS NOT NULL AND ic.is_included_column = 0 AND (${indexScope}) ORDER BY s.name, t.name, i.name, ic.key_ordinal`
+      },
+      {
+        kind: "foreignKeys",
+        sql: `SELECT fs.name AS schema_name, ft.name AS table_name, fk.name AS constraint_name, fc.name AS column_name, rs.name AS ref_schema, rt.name AS ref_table, rc.name AS ref_column, fkc.constraint_column_id AS ordinal_position FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id JOIN sys.tables ft ON ft.object_id = fk.parent_object_id JOIN sys.schemas fs ON fs.schema_id = ft.schema_id JOIN sys.columns fc ON fc.object_id = fkc.parent_object_id AND fc.column_id = fkc.parent_column_id JOIN sys.tables rt ON rt.object_id = fk.referenced_object_id JOIN sys.schemas rs ON rs.schema_id = rt.schema_id JOIN sys.columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id WHERE (${keyScope}) ORDER BY fs.name, ft.name, fk.name, fkc.constraint_column_id`
+      }
+    ];
+  }
+
+  // Oracle, OceanBase Oracle mode and DM share the ALL_* dictionary views, the
+  // same set DBX's own JDBC agents read (including DATA_DEFAULT).
+  function dictionaryOracleQueries(tables) {
+    const columnScope = dictionaryScope(tables, "c.owner", "c.table_name", "");
+    const indexScope = dictionaryScope(tables, "i.table_owner", "i.table_name", "");
+    const keyScope = dictionaryScope(tables, "ac.owner", "ac.table_name", "");
+    return [
+      {
+        kind: "columns",
+        sql: `SELECT c.owner AS schema_name, c.table_name AS table_name, c.column_name AS column_name, CASE WHEN c.data_type IN ('VARCHAR2', 'NVARCHAR2', 'CHAR', 'NCHAR', 'RAW') AND c.char_length > 0 THEN c.data_type || '(' || c.char_length || ')' WHEN c.data_type IN ('NUMBER', 'DECIMAL', 'NUMERIC') AND c.data_precision IS NOT NULL AND c.data_scale > 0 THEN c.data_type || '(' || c.data_precision || ',' || c.data_scale || ')' WHEN c.data_type IN ('NUMBER', 'DECIMAL', 'NUMERIC') AND c.data_precision IS NOT NULL THEN c.data_type || '(' || c.data_precision || ')' ELSE c.data_type END AS data_type, c.nullable AS is_nullable, c.data_default AS column_default, cc.comments AS column_comment, tc.comments AS table_comment, c.column_id AS ordinal_position, CASE WHEN pk.column_name IS NULL THEN 0 ELSE 1 END AS primary_key FROM all_tab_columns c LEFT JOIN all_col_comments cc ON cc.owner = c.owner AND cc.table_name = c.table_name AND cc.column_name = c.column_name LEFT JOIN all_tab_comments tc ON tc.owner = c.owner AND tc.table_name = c.table_name LEFT JOIN (SELECT ac.owner, acc.table_name, acc.column_name FROM all_constraints ac JOIN all_cons_columns acc ON acc.owner = ac.owner AND acc.constraint_name = ac.constraint_name WHERE ac.constraint_type = 'P') pk ON pk.owner = c.owner AND pk.table_name = c.table_name AND pk.column_name = c.column_name WHERE (${columnScope}) ORDER BY c.owner, c.table_name, c.column_id`
+      },
+      {
+        kind: "indexes",
+        sql: `SELECT i.table_owner AS schema_name, i.table_name AS table_name, i.index_name AS index_name, CASE WHEN i.uniqueness = 'UNIQUE' THEN 1 ELSE 0 END AS is_unique, CASE WHEN pk.constraint_name IS NULL THEN 0 ELSE 1 END AS is_primary, ic.column_name AS column_name, ic.column_position AS ordinal_position FROM all_indexes i JOIN all_ind_columns ic ON ic.index_owner = i.owner AND ic.index_name = i.index_name AND ic.table_owner = i.table_owner AND ic.table_name = i.table_name LEFT JOIN all_constraints pk ON pk.owner = i.table_owner AND pk.table_name = i.table_name AND pk.constraint_type = 'P' AND pk.index_name = i.index_name WHERE (${indexScope}) ORDER BY i.table_owner, i.table_name, i.index_name, ic.column_position`
+      },
+      {
+        kind: "foreignKeys",
+        sql: `SELECT ac.owner AS schema_name, ac.table_name AS table_name, ac.constraint_name AS constraint_name, acc.column_name AS column_name, rcc.owner AS ref_schema, rcc.table_name AS ref_table, rcc.column_name AS ref_column, acc.position AS ordinal_position FROM all_constraints ac JOIN all_cons_columns acc ON acc.owner = ac.owner AND acc.constraint_name = ac.constraint_name JOIN all_cons_columns rcc ON rcc.owner = ac.r_owner AND rcc.constraint_name = ac.r_constraint_name AND rcc.position = acc.position WHERE ac.constraint_type = 'R' AND (${keyScope}) ORDER BY ac.owner, ac.table_name, ac.constraint_name, acc.position`
+      }
+    ];
+  }
+
+  function dictionaryClickhouseQueries(database, tables) {
+    const names = tables.map((table) => dictionarySqlLiteral(table.name)).join(", ");
+    const scope = `database = ${dictionarySqlLiteral(database)} AND table IN (${names})`;
+    return [
+      {
+        kind: "columns",
+        sql: `SELECT database AS schema_name, table AS table_name, name AS column_name, type AS data_type, CASE WHEN type LIKE '%Nullable(%' THEN 1 ELSE 0 END AS is_nullable, default_expression AS column_default, comment AS column_comment, position AS ordinal_position, is_in_primary_key AS primary_key FROM system.columns WHERE ${scope} ORDER BY table, position`
+      },
+      {
+        // ClickHouse has no foreign keys; the sorting key is the only index-like
+        // structure, so it is exposed as one synthetic PRIMARY index.
+        kind: "indexes",
+        sql: `SELECT database AS schema_name, table AS table_name, 'PRIMARY' AS index_name, 0 AS is_unique, 1 AS is_primary, name AS column_name, position AS ordinal_position FROM system.columns WHERE ${scope} AND is_in_primary_key = 1 ORDER BY table, position`
+      }
+    ];
+  }
+
+  function dictionaryFamilyQueries(family, database, tables) {
+    if (family === "mysql") return dictionaryMysqlQueries(database, tables);
+    if (family === "postgres") return dictionaryPostgresQueries(tables);
+    if (family === "sqlserver") return dictionarySqlserverQueries(tables);
+    if (family === "oracle") return dictionaryOracleQueries(tables);
+    return dictionaryClickhouseQueries(database, tables);
+  }
+
+  // Oracle and DM sessions must keep their current schema: their catalog
+  // queries filter by OWNER, and switching the session database would only add
+  // pool churn. ClickHouse queries are equally database-qualified.
+  function dictionaryRequestDatabase(family, database) {
+    return family === "sqlite" || family === "oracle" || family === "clickhouse" ? undefined : database;
+  }
+
+  function dictionaryTableSchema(family, entry, database) {
+    const schema = entry.schema_name ? String(entry.schema_name) : "";
+    if (schema) return schema;
+    if (family === "postgres") return "public";
+    if (family === "sqlite") return "main";
+    return database;
   }
 
   function resetDictionaryFilters() {
@@ -3252,15 +3838,13 @@
     renderDictionary();
     try {
       const result = await runDictionaryQuery(connection, {
-        database: connection.family === "sqlite" ? undefined : database.name,
+        database: dictionaryRequestDatabase(connection.family, database.name),
         sql: dictionaryTablesSql(connection.family, database.name)
       });
       database.tables = result.rows.map((row) => {
         const entry = dictionaryAliasRow(result, row);
         return {
-          schema: connection.family === "postgres"
-            ? String(entry.schema_name || "public")
-            : (connection.family === "sqlite" ? "main" : database.name),
+          schema: dictionaryTableSchema(connection.family, entry, database.name),
           name: String(entry.name || ""),
           comment: entry.comment ? String(entry.comment) : "",
           checked: true
@@ -3313,9 +3897,9 @@
 
   function applyDictionaryRows(family, database, query, result, resolve, fallbackTable) {
     const tableOf = (entry) => {
-      if (family === "postgres") return resolve(String(entry.schema_name || ""), String(entry.table_name || ""));
       if (family === "sqlite") return fallbackTable;
-      return resolve(database, String(entry.table_name || ""));
+      if (family === "mysql") return resolve(database, String(entry.table_name || ""));
+      return resolve(String(entry.schema_name || ""), String(entry.table_name || ""));
     };
     for (const row of result.rows) {
       const entry = dictionaryAliasRow(result, row);
@@ -3326,7 +3910,7 @@
         table.columns.push({
           name: String(entry.column_name || ""),
           dataType: String(entry.data_type || ""),
-          nullable: entry.is_nullable === true || entry.is_nullable === "YES" || Number(entry.not_null) === 0,
+          nullable: entry.is_nullable === true || entry.is_nullable === "YES" || entry.is_nullable === "Y" || Number(entry.is_nullable) === 1 || Number(entry.not_null) === 0,
           defaultValue: entry.column_default === null || entry.column_default === undefined ? "" : String(entry.column_default),
           comment: entry.column_comment ? String(entry.column_comment) : "",
           primary: Number(entry.primary_key) > 0 || String(entry.column_key || "").toUpperCase() === "PRI",
@@ -3395,13 +3979,13 @@
     const byKey = new Map(model.map((table) => [`${table.schema}\u0000${table.name}`, table]));
     const resolve = (schema, name) => byKey.get(`${schema || ""}\u0000${name}`) || null;
     const queries = [];
-    if (family === "mysql" || family === "postgres") {
+    if (family === "sqlite") {
+      queries.push(...dictionarySqliteQueries(tables));
+    } else {
       for (let index = 0; index < tables.length; index += DICTIONARY_TABLE_CHUNK) {
         const chunk = tables.slice(index, index + DICTIONARY_TABLE_CHUNK);
-        queries.push(...(family === "mysql" ? dictionaryMysqlQueries(database.name, chunk) : dictionaryPostgresQueries(chunk)));
+        queries.push(...dictionaryFamilyQueries(family, database.name, chunk));
       }
-    } else {
-      queries.push(...dictionarySqliteQueries(tables));
     }
 
     const fatal = new Set();
@@ -3413,7 +3997,7 @@
       renderDictionary();
       try {
         const result = await runDictionaryQuery(connection, {
-          database: family === "sqlite" ? undefined : database.name,
+          database: dictionaryRequestDatabase(family, database.name),
           sql: query.sql
         });
         if (result.truncated) warnings.push("部分查询结果超过行数上限，数据字典可能不完整。");
@@ -3482,6 +4066,7 @@
   }
 
   function dictionaryTableTitle(family, table) {
+    if (family === "sqlserver") return table.schema ? `${table.schema}.${table.name}` : table.name;
     return family === "postgres" && table.schema && table.schema !== "public"
       ? `${table.schema}.${table.name}`
       : table.name;
@@ -3510,8 +4095,9 @@
     for (const warning of [...new Set(warnings)]) lines.push(`> ${warning}`);
     if (warnings.length) lines.push("");
 
+    const databaseWord = dictionaryDatabaseWord(connection.family);
     for (const database of model.databases) {
-      lines.push(`## 库 \`${database.name}\``);
+      lines.push(`## ${databaseWord} \`${database.name}\``);
       lines.push("");
       if (!database.tables.length) {
         lines.push("_没有可导出的表。_");
@@ -3576,7 +4162,7 @@
       return `
         <div class="state-panel">
           <div class="state-title">没有可用的数据库连接</div>
-          <div class="state-desc">请先在 DBX 中保存并连接一个 MySQL、PostgreSQL 或 SQLite 连接，然后回到这里刷新。</div>
+          <div class="state-desc">请先在 DBX 中保存并连接一个受支持的数据库（MySQL、PostgreSQL、SQLite、SQL Server、Oracle、达梦、ClickHouse 等），然后回到这里刷新。</div>
         </div>`;
     }
     return `
@@ -3586,7 +4172,7 @@
         <ol class="state-steps">
           <li>选择一个已连接的数据库</li>
           <li>勾选要导出的库，再勾选表</li>
-          <li>生成后可复制或保存为 Markdown</li>
+          <li>生成后可复制，或保存为 Markdown / Word</li>
         </ol>
       </div>`;
   }
@@ -3610,30 +4196,36 @@
         ? "需要 DBX 0.6.23+（Host API 1.4）。"
         : connection
           ? "只读查询；首次读取该连接时 DBX 会请求授权。"
-          : "只支持 MySQL / PostgreSQL / SQLite 及其兼容库。";
+          : "支持 MySQL / PostgreSQL / SQLite / SQL Server / Oracle / 达梦 / ClickHouse 及其兼容库。";
     }
 
     const dbFilterRow = $("#dictDbFilterRow");
     if (dbFilterRow) dbFilterRow.hidden = !connection;
+    const databaseWord = dictionaryDatabaseWord(connection?.family || "");
+    const dbFilter = $("#dictDbFilter");
+    if (dbFilter) {
+      dbFilter.placeholder = `筛选${databaseWord}名`;
+      dbFilter.setAttribute("aria-label", `筛选${databaseWord}`);
+    }
 
     const databases = $("#dictDatabases");
     if (databases) {
       if (dict.loadingDatabases) {
-        databases.innerHTML = '<div class="dict-loading"><span class="spinner"></span>正在读取库…</div>';
+        databases.innerHTML = `<div class="dict-loading"><span class="spinner"></span>正在读取${databaseWord}…</div>`;
       } else if (connection && !dict.databases.length) {
-        databases.innerHTML = '<div class="dict-empty">没有可见的库。</div>';
+        databases.innerHTML = `<div class="dict-empty">没有可见的${databaseWord}。</div>`;
       } else if (!connection) {
         databases.innerHTML = "";
       } else {
-        const dbFilter = dict.dbFilter.trim().toLowerCase();
-        const matches = dbFilter
-          ? dict.databases.filter((database) => database.name.toLowerCase().includes(dbFilter))
+        const dbFilterText = dict.dbFilter.trim().toLowerCase();
+        const matches = dbFilterText
+          ? dict.databases.filter((database) => database.name.toLowerCase().includes(dbFilterText))
           : dict.databases;
         const hiddenChecked = dict.databases.filter((database) => database.checked && !matches.includes(database)).length;
         databases.innerHTML = `
           <div class="dict-group-title">
-            <span>库</span>
-            ${dbFilter ? `<span class="dict-group-tools"><span class="dict-tag">${matches.length}/${dict.databases.length}</span></span>` : ""}
+            <span>${databaseWord}</span>
+            ${dbFilterText ? `<span class="dict-group-tools"><span class="dict-tag">${matches.length}/${dict.databases.length}</span></span>` : ""}
           </div>` + (matches.length ? matches.map((database) => {
             const index = dict.databases.indexOf(database);
             return `
@@ -3642,8 +4234,8 @@
             <span>${escapeHtml(database.name)}</span>
             ${database.loading ? '<span class="dict-tag">读取中</span>' : database.loaded ? `<span class="dict-tag">${database.tables.length} 张表</span>` : ""}
           </label>`;
-          }).join("") : '<div class="dict-empty">没有匹配的库。</div>') +
-          (hiddenChecked ? `<div class="dict-hint dict-hidden-note">已勾选的 ${hiddenChecked} 个库不在筛选结果中。</div>` : "");
+          }).join("") : `<div class="dict-empty">没有匹配的${databaseWord}。</div>`) +
+          (hiddenChecked ? `<div class="dict-hint dict-hidden-note">已勾选的 ${hiddenChecked} 个${databaseWord}不在筛选结果中。</div>` : "");
       }
     }
 
@@ -3651,7 +4243,7 @@
     if (tables) {
       const checked = dict.databases.filter((database) => database.checked);
       if (!checked.length) {
-        tables.innerHTML = '<div class="dict-empty">勾选库后列出表。</div>';
+        tables.innerHTML = `<div class="dict-empty">勾选${databaseWord}后列出表。</div>`;
       } else if (checked.some((database) => database.loading)) {
         tables.innerHTML = '<div class="dict-loading"><span class="spinner"></span>正在读取表…</div>';
       } else {
@@ -3966,6 +4558,15 @@
     });
     $("#copyBtn").addEventListener("click", copyCurrent);
     $("#saveBtn").addEventListener("click", saveCurrent);
+    $("#wordBtn").addEventListener("click", () => { void saveWordCurrent(); });
+    $("#saveAllWordBtn").addEventListener("click", saveAllWords);
+    $("#closeWordDialog").addEventListener("click", closeWordFidelity);
+    $("#confirmWordDialog").addEventListener("click", closeWordFidelity);
+    $("#wordScrim").addEventListener("click", closeWordFidelity);
+    $("#closeWordBatch").addEventListener("click", closeWordBatchDialog);
+    $("#cancelWordBatch").addEventListener("click", closeWordBatchDialog);
+    $("#wordBatchScrim").addEventListener("click", closeWordBatchDialog);
+    $("#confirmWordBatch").addEventListener("click", () => { void confirmWordBatch(); });
     $("#removeBtn").addEventListener("click", () => {
       const file = getSelected();
       if (file) removeFile(file.id);
@@ -4069,7 +4670,9 @@
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        if (!$("#ocrLayer").hidden) closeOcrDialog();
+        if (!$("#wordLayer").hidden) closeWordFidelity();
+        else if (!$("#wordBatchLayer").hidden) closeWordBatchDialog();
+        else if (!$("#ocrLayer").hidden) closeOcrDialog();
         else closeSettings();
       }
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {

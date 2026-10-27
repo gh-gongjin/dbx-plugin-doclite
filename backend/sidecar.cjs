@@ -7,7 +7,7 @@ const crypto = require("node:crypto");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
 const { buildDocumentModel } = require("./markdown-model.cjs");
-const { buildDictionaryDocx } = require("./docx-writer.cjs");
+const { buildDocx } = require("./docx-writer.cjs");
 const {
   OcrError,
   readOcrConfig,
@@ -20,7 +20,7 @@ const {
 } = require("./ocr.cjs");
 
 const PLUGIN_ID = "com.gongjin.doclite";
-const PLUGIN_VERSION = "0.1.12";
+const PLUGIN_VERSION = "0.1.14";
 const ANYDOC_VERSION = "0.2.4";
 const PDF_INSPECTOR_VERSION = "1.17.0";
 
@@ -35,8 +35,8 @@ const PICKER_EXE = process.env.DBX_PICKER_EXE
 
 const MAX_FILE_BYTES = 512 * 1024 * 1024;
 const MAX_READ_BYTES = 8 * 1024 * 1024;
-const MAX_DICTIONARY_BYTES = 6 * 1024 * 1024;
-const DICTIONARY_FILE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_WORD_BYTES = 6 * 1024 * 1024;
+const WORD_FILE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_SCAN_FILES = 2000;
 const MAX_SCAN_DEPTH = 8;
 const MAX_JOBS = 32;
@@ -702,19 +702,144 @@ async function readChunk(filePath, offset, length) {
   };
 }
 
-function dictionaryDocxPath(fileId) {
-  if (!DICTIONARY_FILE_ID.test(fileId)) throw badParams("无效的 Word 文件标识。");
-  return path.join(TEMP_DIR, `dict-${fileId}.docx`);
+function wordDocxPath(fileId) {
+  if (!WORD_FILE_ID.test(fileId)) throw badParams("无效的 Word 文件标识。");
+  return path.join(TEMP_DIR, `word-${fileId}.docx`);
 }
 
-function dictionaryMarkdownPath(fileId) {
-  if (!DICTIONARY_FILE_ID.test(fileId)) throw badParams("无效的 Word 文件标识。");
-  return path.join(TEMP_DIR, `dict-${fileId}.md`);
+function wordMarkdownPath(fileId) {
+  if (!WORD_FILE_ID.test(fileId)) throw badParams("无效的 Word 文件标识。");
+  return path.join(TEMP_DIR, `word-${fileId}.md`);
 }
 
-function dictionaryDocxName(title) {
-  const safe = String(title).replace(/[\\/:*?"<>|\r\n]+/g, "-").trim().slice(0, 80) || "数据字典";
+function wordDocxName(title) {
+  const safe = String(title).replace(/[\\/:*?"<>|\r\n]+/g, "-").trim().slice(0, 80) || "文档";
   return `${safe}.docx`;
+}
+
+// The dictionary export and the converted-document export share one pipeline:
+// the UI uploads Markdown, the sidecar builds the .docx and hands the bytes back.
+const WORD_LABELS = {
+  dictionary: {
+    empty: "数据字典内容为空，请先生成数据字典。",
+    tooLarge: "数据字典过大，请减少导出的表后重试。",
+    expired: "上传的数据字典已过期，请重试。",
+    fallbackTitle: "数据字典",
+  },
+  document: {
+    empty: "文档内容为空，请先完成转换。",
+    tooLarge: "文档内容过大，请拆分后再试。",
+    expired: "上传的文档已过期，请重试。",
+    fallbackTitle: "文档",
+  },
+};
+
+function beginWordDocx(params, label) {
+  const size = Number(params && params.size) || 0;
+  if (!(size > 0)) throw badParams(label.empty);
+  if (size > MAX_WORD_BYTES) throw badParams(label.tooLarge);
+  ensureDirectories();
+  const fileId = crypto.randomUUID();
+  fs.writeFileSync(wordMarkdownPath(fileId), Buffer.alloc(0));
+  return { fileId, maxBytes: MAX_WORD_BYTES };
+}
+
+function chunkWordDocx(params, label) {
+  const fileId = String((params && params.fileId) || "");
+  const filePath = wordMarkdownPath(fileId);
+  const data = typeof (params && params.dataBase64) === "string" ? Buffer.from(params.dataBase64, "base64") : null;
+  if (!data || !data.length) throw badParams("缺少数据块。");
+  const offset = Number(params && params.offset) || 0;
+  let currentSize;
+  try {
+    currentSize = fs.statSync(filePath).size;
+  } catch {
+    throw badParams(label.expired);
+  }
+  if (offset !== currentSize) throw badParams("数据块顺序不正确，请重试。");
+  if (currentSize + data.length > MAX_WORD_BYTES) throw badParams(label.tooLarge);
+  fs.appendFileSync(filePath, data);
+  return { offset: currentSize + data.length, size: currentSize + data.length };
+}
+
+function writeUniqueFile(targetDir, name, buffer) {
+  const extension = path.extname(name);
+  const base = extension ? name.slice(0, name.length - extension.length) : name;
+  for (let sequence = 1; sequence <= 500; sequence += 1) {
+    const candidate = sequence === 1 ? name : `${base}-${sequence}${extension}`;
+    const filePath = path.join(targetDir, candidate);
+    try {
+      fs.writeFileSync(filePath, buffer, { flag: "wx" });
+      return { name: candidate, path: filePath };
+    } catch (error) {
+      if (error && error.code === "EEXIST") continue;
+      throw error;
+    }
+  }
+  throw new RpcError(-32000, "目标目录中同名文件过多，请换一个目录保存。", { code: "io" });
+}
+
+function commitWordDocx(params, label) {
+  const fileId = String((params && params.fileId) || "");
+  const markdownPath = wordMarkdownPath(fileId);
+  let markdown;
+  try {
+    markdown = fs.readFileSync(markdownPath, "utf8");
+  } catch {
+    throw badParams(label.expired);
+  }
+  if (!markdown.trim()) throw badParams(label.empty);
+  const title = String((params && params.title) || label.fallbackTitle).slice(0, 120);
+  let buffer;
+  try {
+    buffer = buildDocx(markdown, { title, emptyMessage: label.empty });
+  } catch (error) {
+    throw asRpcError(error, "生成 Word 失败。");
+  }
+  const name = wordDocxName(title);
+  const outputDir = String((params && params.outputDir) || "").trim();
+  let written = null;
+  if (outputDir) {
+    const dir = resolveCustomDir(outputDir);
+    ensureOutputDir(dir);
+    try {
+      written = writeUniqueFile(dir, name, buffer);
+    } catch (error) {
+      throw new RpcError(-32000, `无法写入保存目录：${dir}`, {
+        code: "io",
+        detail: String((error && error.message) || error),
+      });
+    }
+  } else {
+    fs.writeFileSync(wordDocxPath(fileId), buffer);
+  }
+  try {
+    fs.rmSync(markdownPath, { force: true });
+  } catch {
+    /* best effort */
+  }
+  return {
+    fileId,
+    size: buffer.length,
+    name: written ? written.name : name,
+    path: written ? written.path : null,
+  };
+}
+
+function readWordDocx(fileId) {
+  const filePath = wordDocxPath(fileId);
+  if (!fs.existsSync(filePath)) throw badParams("Word 文件已过期，请重新保存。");
+  return filePath;
+}
+
+function discardWordDocx(fileId) {
+  try {
+    fs.rmSync(wordDocxPath(fileId), { force: true });
+    fs.rmSync(wordMarkdownPath(fileId), { force: true });
+  } catch {
+    /* already gone */
+  }
+  return { discarded: true };
 }
 
 async function handle(method, params) {
@@ -861,76 +986,35 @@ async function handle(method, params) {
       return readChunk(filePath, params && params.offset, params && params.length);
     }
 
-    case "doc/dictionaryDocxBegin": {
-      const size = Number(params && params.size) || 0;
-      if (!(size > 0)) throw badParams("数据字典内容为空，请先生成数据字典。");
-      if (size > MAX_DICTIONARY_BYTES) throw badParams("数据字典过大，请减少导出的表后重试。");
-      ensureDirectories();
-      const fileId = crypto.randomUUID();
-      fs.writeFileSync(dictionaryMarkdownPath(fileId), Buffer.alloc(0));
-      return { fileId, maxBytes: MAX_DICTIONARY_BYTES };
-    }
+    case "doc/dictionaryDocxBegin":
+      return beginWordDocx(params, WORD_LABELS.dictionary);
 
-    case "doc/dictionaryDocxChunk": {
-      const fileId = String((params && params.fileId) || "");
-      const filePath = dictionaryMarkdownPath(fileId);
-      const data = typeof (params && params.dataBase64) === "string" ? Buffer.from(params.dataBase64, "base64") : null;
-      if (!data || !data.length) throw badParams("缺少数据块。");
-      const offset = Number(params && params.offset) || 0;
-      let currentSize;
-      try {
-        currentSize = fs.statSync(filePath).size;
-      } catch {
-        throw badParams("上传的数据字典已过期，请重试。");
-      }
-      if (offset !== currentSize) throw badParams("数据块顺序不正确，请重试。");
-      if (currentSize + data.length > MAX_DICTIONARY_BYTES) throw badParams("数据字典过大，请减少导出的表后重试。");
-      fs.appendFileSync(filePath, data);
-      return { offset: currentSize + data.length, size: currentSize + data.length };
-    }
+    case "doc/dictionaryDocxChunk":
+      return chunkWordDocx(params, WORD_LABELS.dictionary);
 
-    case "doc/dictionaryDocxCommit": {
-      const fileId = String((params && params.fileId) || "");
-      const markdownPath = dictionaryMarkdownPath(fileId);
-      let markdown;
-      try {
-        markdown = fs.readFileSync(markdownPath, "utf8");
-      } catch {
-        throw badParams("上传的数据字典已过期，请重试。");
-      }
-      if (!markdown.trim()) throw badParams("数据字典内容为空，请先生成数据字典。");
-      const title = String((params && params.title) || "数据字典").slice(0, 120);
-      let buffer;
-      try {
-        buffer = buildDictionaryDocx(markdown, { title });
-      } catch (error) {
-        throw asRpcError(error, "生成 Word 失败。");
-      }
-      fs.writeFileSync(dictionaryDocxPath(fileId), buffer);
-      try {
-        fs.rmSync(markdownPath, { force: true });
-      } catch {
-        /* best effort */
-      }
-      return { fileId, size: buffer.length, name: dictionaryDocxName(title) };
-    }
+    case "doc/dictionaryDocxCommit":
+      return commitWordDocx(params, WORD_LABELS.dictionary);
 
-    case "doc/readDictionaryDocx": {
-      const filePath = dictionaryDocxPath(String((params && params.fileId) || ""));
-      if (!fs.existsSync(filePath)) throw badParams("Word 文件已过期，请重新保存。");
-      return readChunk(filePath, params && params.offset, params && params.length);
-    }
+    case "doc/readDictionaryDocx":
+      return readChunk(readWordDocx(String((params && params.fileId) || "")), params && params.offset, params && params.length);
 
-    case "doc/discardDictionaryDocx": {
-      const fileId = String((params && params.fileId) || "");
-      try {
-        fs.rmSync(dictionaryDocxPath(fileId), { force: true });
-        fs.rmSync(dictionaryMarkdownPath(fileId), { force: true });
-      } catch {
-        /* already gone */
-      }
-      return { discarded: true };
-    }
+    case "doc/discardDictionaryDocx":
+      return discardWordDocx(String((params && params.fileId) || ""));
+
+    case "doc/wordBegin":
+      return beginWordDocx(params, WORD_LABELS.document);
+
+    case "doc/wordChunk":
+      return chunkWordDocx(params, WORD_LABELS.document);
+
+    case "doc/wordCommit":
+      return commitWordDocx(params, WORD_LABELS.document);
+
+    case "doc/readWord":
+      return readChunk(readWordDocx(String((params && params.fileId) || "")), params && params.offset, params && params.length);
+
+    case "doc/discardWord":
+      return discardWordDocx(String((params && params.fileId) || ""));
 
     case "doc/discard": {
       const job = getJob(params && params.jobId);

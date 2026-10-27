@@ -260,11 +260,11 @@ const APP = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 const SECTION = `<w:sectPr><w:pgSz w:w="${PAGE_WIDTH}" w:h="${PAGE_HEIGHT}"/><w:pgMar w:top="${PAGE_MARGIN}" w:right="${PAGE_MARGIN}" w:bottom="${PAGE_MARGIN}" w:left="${PAGE_MARGIN}" w:header="567" w:footer="567" w:gutter="0"/><w:cols w:space="720"/></w:sectPr>`;
 
-function buildDictionaryDocx(markdown, options = {}) {
+function buildDocx(markdown, options = {}) {
   const blocks = parseMarkdown(String(markdown || ""));
-  if (!blocks.length) throw new Error("数据字典内容为空。");
+  if (!blocks.length) throw new Error(options.emptyMessage || "文档内容为空。");
   const date = options.date instanceof Date ? options.date : new Date();
-  const title = String(options.title || options.name || "数据字典").slice(0, 200);
+  const title = String(options.title || options.name || "文档").slice(0, 200);
   const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${renderBlocks(blocks)}${SECTION}</w:body></w:document>`;
   return zip([
@@ -279,6 +279,7 @@ function buildDictionaryDocx(markdown, options = {}) {
 }
 
 module.exports = {
-  buildDictionaryDocx,
+  buildDocx,
+  buildDictionaryDocx: buildDocx,
   crc32,
 };

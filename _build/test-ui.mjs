@@ -67,11 +67,25 @@ function readZipEntry(buffer, entryName) {
   throw new Error(`zip entry not found: ${entryName}`);
 }
 
+function listZipEntries(buffer) {
+  const entries = [];
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const name = buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8");
+    entries.push(name);
+    offset += 30 + nameLength + extraLength + size;
+  }
+  return entries;
+}
+
 class Sidecar {
   constructor(command, args, extraEnv = {}) {
     this.child = spawn(command, args, {
       cwd: root,
-      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.12", ...extraEnv },
+      env: { ...process.env, DBX_PLUGIN_DATA_DIR: dataDir, DBX_PLUGIN_ID: "com.gongjin.doclite", DBX_PLUGIN_VERSION: "0.1.13", ...extraEnv },
       stdio: ["pipe", "pipe", "pipe"],
     });
     this.stderr = "";
@@ -264,6 +278,10 @@ const dictionaryConnections = [
   { id: "mysql-main", name: "生产 MySQL", dbType: "mysql", connected: true, isConnected: true, database: "shop" },
   { id: "pg-main", name: "应用 PG", dbType: "postgres", connected: true, isConnected: true, database: "appdb" },
   { id: "sqlite-main", name: "本地 SQLite", dbType: "sqlite", connected: true, isConnected: true, database: "local.db" },
+  { id: "sqlserver-main", name: "生产 SQL Server", dbType: "sqlserver", connected: true, isConnected: true, database: "appdb" },
+  { id: "oracle-main", name: "核心 Oracle", dbType: "oracle", connected: true, isConnected: true, database: "APP" },
+  { id: "dameng-main", name: "达梦 DM", dbType: "dameng", connected: true, isConnected: true, database: "DMHR" },
+  { id: "clickhouse-main", name: "分析 ClickHouse", dbType: "clickhouse", connected: true, isConnected: true, database: "analytics" },
   { id: "mongo-main", name: "文档库", dbType: "mongodb", connected: true, isConnected: true },
   { id: "mysql-down", name: "离线 MySQL", dbType: "mysql", connected: false, isConnected: false },
 ];
@@ -362,6 +380,129 @@ const sqliteCatalog = [
     foreignKeys: [[0, 0, "accounts", "account_id", "id"]],
   },
 ];
+
+// SQL Server is reached through a database-scoped pool, so the catalog is
+// keyed by the request's `database` rather than by schema.
+const sqlserverCatalog = {
+  appdb: [
+    {
+      schema: "sales", name: "orders", comment: "订单",
+      columns: [
+        ["id", "bigint", 0, "", "主键", 1],
+        ["order_no", "nvarchar(32)", 0, "", "订单号", 0],
+        ["customer_id", "bigint", 1, "", "客户", 0],
+        ["amount", "decimal(12,2)", 0, "((0))", "金额", 0],
+        ["note", "nvarchar(max)", 1, "", "备注", 0],
+        ["created_at", "datetime2(7)", 0, "(getdate())", "创建时间", 0],
+      ],
+      indexes: [
+        ["PK_orders", 0, 1, ["id"]],
+        ["UK_orders_no", 1, 0, ["order_no"]],
+        ["IX_orders_customer", 0, 0, ["customer_id"]],
+      ],
+      foreignKeys: [["FK_orders_customer", ["customer_id"], "sales", "customers", ["id"]]],
+    },
+    {
+      schema: "sales", name: "customers", comment: "客户",
+      columns: [
+        ["id", "bigint", 0, "", "主键", 1],
+        ["name", "nvarchar(80)", 0, "", "名称", 0],
+      ],
+      indexes: [["PK_customers", 0, 1, ["id"]]],
+      foreignKeys: [],
+    },
+    {
+      schema: "dbo", name: "audit_log", comment: "审计日志",
+      columns: [
+        ["id", "bigint", 0, "", "", 1],
+        ["action", "varchar(40)", 0, "", "动作", 0],
+      ],
+      indexes: [["PK_audit_log", 0, 1, ["id"]]],
+      foreignKeys: [],
+    },
+  ],
+};
+
+// Oracle and DM both read ALL_* views; each connection sees exactly one schema.
+const oracleDictionaries = {
+  "oracle-main": {
+    schema: "APP",
+    tables: [
+      {
+        name: "ORDERS", comment: "订单",
+        columns: [
+          ["ORDER_ID", "NUMBER(19)", "N", "", "主键", 1],
+          ["ORDER_NO", "VARCHAR2(32)", "N", "", "订单号", 0],
+          ["CUSTOMER_ID", "NUMBER(19)", "Y", "", "客户", 0],
+          ["AMOUNT", "NUMBER(12,2)", "Y", "0", "金额", 0],
+          ["CREATED_AT", "TIMESTAMP(6)", "N", "SYSDATE", "创建时间", 0],
+        ],
+        indexes: [
+          ["PK_ORDERS", 0, 1, ["ORDER_ID"]],
+          ["UK_ORDERS_NO", 1, 0, ["ORDER_NO"]],
+        ],
+        foreignKeys: [["FK_ORDERS_CUSTOMER", ["CUSTOMER_ID"], "APP", "CUSTOMERS", ["CUSTOMER_ID"]]],
+      },
+      {
+        name: "CUSTOMERS", comment: "客户",
+        columns: [
+          ["CUSTOMER_ID", "NUMBER(19)", "N", "", "主键", 1],
+          ["NAME", "VARCHAR2(80)", "Y", "", "名称", 0],
+        ],
+        indexes: [["PK_CUSTOMERS", 0, 1, ["CUSTOMER_ID"]]],
+        foreignKeys: [],
+      },
+    ],
+  },
+  "dameng-main": {
+    schema: "DMHR",
+    tables: [
+      {
+        name: "ORDER_INFO", comment: "订单信息",
+        columns: [
+          ["ORDER_ID", "BIGINT", "N", "", "主键", 1],
+          ["CUSTOMER_ID", "INT", "Y", "", "客户", 0],
+          ["AMOUNT", "DECIMAL(12,2)", "Y", "0", "金额", 0],
+          ["CREATED_AT", "TIMESTAMP", "N", "SYSDATE", "创建时间", 0],
+        ],
+        indexes: [["PK_ORDER_INFO", 0, 1, ["ORDER_ID"]]],
+        foreignKeys: [["FK_ORDER_CUSTOMER", ["CUSTOMER_ID"], "DMHR", "CUSTOMER", ["CUSTOMER_ID"]]],
+      },
+      {
+        name: "CUSTOMER", comment: "客户",
+        columns: [
+          ["CUSTOMER_ID", "INT", "N", "", "主键", 1],
+          ["NAME", "VARCHAR(80)", "Y", "", "名称", 0],
+        ],
+        indexes: [["PK_CUSTOMER", 0, 1, ["CUSTOMER_ID"]]],
+        foreignKeys: [],
+      },
+    ],
+  },
+};
+
+// The last item of each column row is is_in_primary_key; ClickHouse indexes
+// are synthesised from it because system tables have no index list.
+const clickhouseCatalog = {
+  analytics: [
+    {
+      name: "events", comment: "埋点事件",
+      columns: [
+        ["event_id", "UUID", 0, "", "事件 ID", 1],
+        ["user_id", "UInt64", 0, "", "用户", 1],
+        ["payload", "Nullable(String)", 1, "", "载荷", 0],
+        ["ts", "DateTime", 0, "now()", "时间", 0],
+      ],
+    },
+    {
+      name: "sessions", comment: "会话",
+      columns: [
+        ["session_id", "String", 0, "", "会话 ID", 1],
+        ["duration", "Nullable(UInt32)", 1, "", "时长", 0],
+      ],
+    },
+  ],
+};
 
 const dataQueries = [];
 let dataDenied = false;
@@ -498,6 +639,118 @@ function fakeQueryData(request) {
     if (sql.includes("pragma_foreign_key_list")) {
       const table = sqliteCatalog.find((row) => row.name === tableName);
       return fakeResult(connection, ["id", "seq", "ref_table", "column_name", "ref_column"], table?.foreignKeys || []);
+    }
+  }
+
+  if (connection.dbType === "sqlserver") {
+    if (sql.includes("FROM sys.databases")) {
+      return fakeResult(connection, ["name"], [["appdb"]]);
+    }
+    const tables = sqlserverCatalog[request.database] || [];
+    if (sql.includes("FROM sys.tables t") && sql.includes("ep.minor_id = 0")) {
+      return fakeResult(connection, ["schema_name", "name", "comment"], tables.map((table) => [table.schema, table.name, table.comment]));
+    }
+    if (sql.includes("FROM sys.indexes i JOIN sys.tables t")) {
+      const rows = [];
+      for (const table of tables) {
+        for (const index of table.indexes) {
+          index[3].forEach((column, position) => {
+            rows.push([table.schema, table.name, index[0], index[1], index[2], column, position + 1]);
+          });
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "index_name", "is_unique", "is_primary", "column_name", "ordinal_position"], rows);
+    }
+    if (sql.includes("FROM sys.foreign_keys fk")) {
+      const rows = [];
+      for (const table of tables) {
+        for (const key of table.foreignKeys) {
+          key[1].forEach((column, position) => {
+            rows.push([table.schema, table.name, key[0], column, key[2], key[3], key[4][position], position + 1]);
+          });
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "constraint_name", "column_name", "ref_schema", "ref_table", "ref_column", "ordinal_position"], rows);
+    }
+    if (sql.includes("FROM sys.columns c")) {
+      const rows = [];
+      for (const table of tables) {
+        table.columns.forEach((column, index) => {
+          rows.push([table.schema, table.name, column[0], column[1], column[2], column[3], column[4], index + 1, column[5]]);
+        });
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "column_name", "data_type", "is_nullable", "column_default", "column_comment", "ordinal_position", "primary_key"], rows);
+    }
+  }
+
+  if (connection.dbType === "oracle" || connection.dbType === "dameng" || connection.dbType === "oceanbase-oracle") {
+    const catalog = oracleDictionaries[connection.id];
+    if (!catalog) throw new Error(`unexpected oracle-family connection: ${connection.id}`);
+    if (sql.includes("FROM all_users")) {
+      return fakeResult(connection, ["name"], [[catalog.schema]]);
+    }
+    if (sql.includes("FROM all_tables t")) {
+      return fakeResult(connection, ["schema_name", "name", "comment"], catalog.tables.map((table) => [catalog.schema, table.name, table.comment]));
+    }
+    if (sql.includes("FROM all_indexes i")) {
+      const rows = [];
+      for (const table of catalog.tables) {
+        for (const index of table.indexes) {
+          index[3].forEach((column, position) => {
+            rows.push([catalog.schema, table.name, index[0], index[1], index[2], column, position + 1]);
+          });
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "index_name", "is_unique", "is_primary", "column_name", "ordinal_position"], rows);
+    }
+    if (sql.includes("FROM all_tab_columns c")) {
+      const rows = [];
+      for (const table of catalog.tables) {
+        table.columns.forEach((column, index) => {
+          rows.push([catalog.schema, table.name, column[0], column[1], column[2], column[3], column[4], table.comment, index + 1, column[5]]);
+        });
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "column_name", "data_type", "is_nullable", "column_default", "column_comment", "table_comment", "ordinal_position", "primary_key"], rows);
+    }
+    if (sql.includes("FROM all_constraints ac")) {
+      const rows = [];
+      for (const table of catalog.tables) {
+        for (const key of table.foreignKeys) {
+          key[1].forEach((column, position) => {
+            rows.push([catalog.schema, table.name, key[0], column, key[2], key[3], key[4][position], position + 1]);
+          });
+        }
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "constraint_name", "column_name", "ref_schema", "ref_table", "ref_column", "ordinal_position"], rows);
+    }
+  }
+
+  if (connection.dbType === "clickhouse") {
+    if (sql.includes("FROM system.databases")) {
+      return fakeResult(connection, ["name"], [["analytics"]]);
+    }
+    const database = literalAfter(sql, /database = '([^']*)'/);
+    const tables = clickhouseCatalog[database] || [];
+    if (sql.includes("FROM system.tables")) {
+      return fakeResult(connection, ["schema_name", "name", "comment"], tables.map((table) => [database, table.name, table.comment]));
+    }
+    if (sql.includes("FROM system.columns")) {
+      if (sql.includes("is_in_primary_key = 1")) {
+        const rows = [];
+        for (const table of tables) {
+          table.columns.filter((column) => column[5]).forEach((column, position) => {
+            rows.push([database, table.name, "PRIMARY", 0, 1, column[0], position + 1]);
+          });
+        }
+        return fakeResult(connection, ["schema_name", "table_name", "index_name", "is_unique", "is_primary", "column_name", "ordinal_position"], rows);
+      }
+      const rows = [];
+      for (const table of tables) {
+        table.columns.forEach((column, index) => {
+          rows.push([database, table.name, column[0], column[1], column[2], column[3], column[4], index + 1, column[5]]);
+        });
+      }
+      return fakeResult(connection, ["schema_name", "table_name", "column_name", "data_type", "is_nullable", "column_default", "column_comment", "ordinal_position", "primary_key"], rows);
     }
   }
 
@@ -809,6 +1062,54 @@ await page.waitForFunction(() => document.querySelector("#toastWrap").innerText.
 const savedJson = path.join(saveDir, "sample.json");
 check("保存 JSON 文件", fs.existsSync(savedJson) && JSON.parse(fs.readFileSync(savedJson, "utf8")).engine.name === "anydoc");
 await page.click('.tab[data-tab="preview"]');
+
+// 4b. Word 版式与 Word 导出
+check("转换完成后保存 Word 按钮可用", !(await page.locator("#wordBtn").isDisabled()));
+await page.click('.tab[data-tab="word"]');
+await page.waitForTimeout(250);
+check("Word 版式 tab 渲染 A4 版面", (await page.locator("#previewBody .word-sheet").count()) === 1);
+check("Word 版式渲染标题与表格", (await page.locator("#previewBody .ws-title").count()) === 1 && (await page.locator("#previewBody .ws-table").count()) === 1);
+check("Word 版式渲染列表与引用", (await page.locator("#previewBody .ws-list-item").count()) >= 3 && (await page.locator("#previewBody .ws-quote").count()) === 1);
+check("Word 版式标注图片不嵌入", (await page.locator("#previewBody .fidelity-bar").innerText()).includes("图片不嵌入"));
+await page.screenshot({ path: path.join(shots, "ui-11-word-layout.png") });
+await page.click("#openWordFidelity");
+await page.waitForTimeout(150);
+check("还原说明弹窗列出保留与不保留两栏", (await page.locator("#wordLayer .keep-col").count()) === 2);
+check("还原说明弹窗说明图片不嵌入", (await page.locator("#wordLayer").innerText()).includes("图片：源文档中的图片暂不嵌入"));
+await page.screenshot({ path: path.join(shots, "ui-12-word-fidelity.png") });
+await page.click("#confirmWordDialog");
+await page.waitForTimeout(120);
+check("关闭还原说明弹窗", await page.evaluate(() => document.querySelector("#wordLayer").hidden));
+
+await page.click("#wordBtn");
+await page.waitForFunction(() => document.querySelector("#toastWrap").innerText.includes("已保存 sample.docx"), null, { timeout: 30000 });
+const savedWordDocx = path.join(saveDir, "sample.docx");
+const savedWordBuffer = fs.existsSync(savedWordDocx) ? fs.readFileSync(savedWordDocx) : Buffer.alloc(0);
+check("保存 Word 文件", savedWordBuffer.length > 1000 && savedWordBuffer.subarray(0, 2).toString("latin1") === "PK", `${savedWordBuffer.length}B`);
+const savedWordXml = savedWordBuffer.length ? readZipEntry(savedWordBuffer, "word/document.xml").toString("utf8") : "";
+check("Word 文档包含标题样式", savedWordXml.includes('w:pStyle w:val="Heading1"'));
+check("Word 文档包含表格", savedWordXml.includes("<w:tbl>"));
+check("Word 文档不嵌入图片", !listZipEntries(savedWordBuffer).some((entry) => entry.startsWith("word/media/")), listZipEntries(savedWordBuffer).join(","));
+check("保存后按钮显示已保存 Word", (await page.locator("#wordBtnText").innerText()) === "已保存 Word");
+
+const batchDir = path.join(workDir, "batch-word");
+fs.mkdirSync(batchDir, { recursive: true });
+if (fakePicker) fs.writeFileSync(pickerModeFile, `ok|${batchDir}`, "utf8");
+check("全部保存 Word 按钮可用", !(await page.locator("#saveAllWordBtn").isDisabled()));
+await page.click("#saveAllWordBtn");
+await page.waitForTimeout(200);
+check("批量保存弹窗列出可导出文件", (await page.locator("#wordBatchList .save-item").count()) >= 4);
+await page.screenshot({ path: path.join(shots, "ui-13-word-batch.png") });
+await page.click("#confirmWordBatch");
+await page.waitForFunction(() => document.querySelector("#toastWrap").innerText.includes("个 Word 文件"), null, { timeout: 60000 });
+const batchFiles = fs.existsSync(batchDir) ? fs.readdirSync(batchDir) : [];
+check("批量保存写出多个 .docx", batchFiles.filter((name) => name.endsWith(".docx")).length >= 4, batchFiles.join(","));
+if (fakePicker) fs.writeFileSync(pickerModeFile, "ok", "utf8");
+
+await selectItem("bad.exe");
+check("未转换文件的保存 Word 按钮禁用", await page.locator("#wordBtn").isDisabled());
+check("未转换文件提示先转换", (await page.locator("#wordBtn").getAttribute("title")).includes("转换完成后可保存 Word"));
+await selectItem("sample.md");
 
 // 5. needsOcr 提示与 OCR 入口
 await selectItem("scanned.pdf");
@@ -1164,7 +1465,7 @@ const connectionOptions = await page.evaluate(() => Array.from(document.querySel
   text: option.textContent,
   disabled: option.disabled,
 })));
-check("列出 DBX 已保存连接", connectionOptions.length === 6, connectionOptions.map((option) => option.text).join(" | "));
+check("列出 DBX 已保存连接", connectionOptions.length === 10, connectionOptions.map((option) => option.text).join(" | "));
 check(
   "未连接与不支持类型置灰",
   connectionOptions.find((option) => option.value === "mysql-down")?.disabled === true
@@ -1309,6 +1610,79 @@ check(
 );
 check("SQLite 外键生成约束名", sqliteBody.includes("entries_fk_0") && sqliteBody.includes("accounts(id)"));
 
+// ---- SQL Server / Oracle / 达梦 / ClickHouse -------------------------------
+await page.selectOption("#dictConnection", "sqlserver-main");
+await page.waitForFunction(() => (
+  Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent).join(",") === "dbo.audit_log,sales.customers,sales.orders"
+), null, { timeout: 10000 });
+const sqlserverTableNames = await page.evaluate(() => Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent));
+check("SQL Server 表显示 schema 前缀并排序", sqlserverTableNames.join(",") === "dbo.audit_log,sales.customers,sales.orders", sqlserverTableNames.join(","));
+check(
+  "SQL Server 单库自动勾选",
+  (await page.locator("#dictDatabases").innerText()).includes("appdb") && (await page.locator("#dictFootText").innerText()) === "已选 3 张表",
+);
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const sqlserverBody = await page.locator("#dictBody").innerText();
+check("SQL Server 字典使用库标题", /^库 appdb$/m.test(sqlserverBody), sqlserverBody.slice(0, 120));
+check(
+  "SQL Server 表标题带 schema",
+  sqlserverBody.includes("sales.orders — 订单") && sqlserverBody.includes("dbo.audit_log — 审计日志"),
+);
+check(
+  "SQL Server 类型保留长度与精度",
+  sqlserverBody.includes("nvarchar(32)") && sqlserverBody.includes("nvarchar(max)")
+    && sqlserverBody.includes("decimal(12,2)") && sqlserverBody.includes("datetime2(7)"),
+);
+check("SQL Server 标注主键与唯一键", sqlserverBody.includes("PK_orders") && sqlserverBody.includes("UK_orders_no") && sqlserverBody.includes("UK"));
+check("SQL Server 外键带 schema 前缀", sqlserverBody.includes("FK_orders_customer") && sqlserverBody.includes("sales.customers(id)"));
+const sqlserverStats = await page.locator("#dictIdentity .identity-meta").innerText();
+check("SQL Server 统计表数与字段数", /3 张表 · 10 个字段/.test(sqlserverStats), sqlserverStats);
+
+await page.selectOption("#dictConnection", "oracle-main");
+await page.waitForFunction(() => (
+  Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent).join(",") === "CUSTOMERS,ORDERS"
+), null, { timeout: 10000 });
+const oraclePanel = await page.locator("#dictDatabases").innerText();
+check("Oracle 用模式承载库一级", oraclePanel.includes("模式") && oraclePanel.includes("APP"), oraclePanel);
+check("Oracle 库筛选改称模式", (await page.locator("#dictDbFilter").getAttribute("placeholder")) === "筛选模式名");
+const oracleTableNames = await page.evaluate(() => Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent));
+check("Oracle 表名不重复拼接模式", oracleTableNames.join(",") === "CUSTOMERS,ORDERS", oracleTableNames.join(","));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const oracleBody = await page.locator("#dictBody").innerText();
+check("Oracle 字典使用模式标题", /^模式 APP$/m.test(oracleBody), oracleBody.slice(0, 120));
+check("Oracle 类型保留长度与精度", oracleBody.includes("NUMBER(19)") && oracleBody.includes("VARCHAR2(32)") && oracleBody.includes("NUMBER(12,2)") && oracleBody.includes("TIMESTAMP(6)"));
+check("Oracle 标注主键与唯一键", oracleBody.includes("PK_ORDERS") && oracleBody.includes("UK_ORDERS_NO"));
+check("Oracle 同模式外键不带前缀", oracleBody.includes("FK_ORDERS_CUSTOMER") && oracleBody.includes("CUSTOMERS(CUSTOMER_ID)"));
+const oracleStats = await page.locator("#dictIdentity .identity-meta").innerText();
+check("Oracle 统计表数与字段数", /2 张表 · 7 个字段/.test(oracleStats), oracleStats);
+
+await page.selectOption("#dictConnection", "dameng-main");
+await page.waitForFunction(() => (
+  Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent).join(",") === "CUSTOMER,ORDER_INFO"
+), null, { timeout: 10000 });
+check("达梦复用 Oracle 方言", (await page.locator("#dictDatabases").innerText()).includes("DMHR"));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const damengBody = await page.locator("#dictBody").innerText();
+check("达梦字典使用模式标题", /^模式 DMHR$/m.test(damengBody) && damengBody.includes("ORDER_INFO — 订单信息"), damengBody.slice(0, 120));
+check("达梦类型与外键", damengBody.includes("DECIMAL(12,2)") && damengBody.includes("FK_ORDER_CUSTOMER") && damengBody.includes("CUSTOMER(CUSTOMER_ID)"));
+
+await page.selectOption("#dictConnection", "clickhouse-main");
+await page.waitForFunction(() => (
+  Array.from(document.querySelectorAll("#dictTables .dict-table-name")).map((element) => element.textContent).join(",") === "events,sessions"
+), null, { timeout: 10000 });
+check("ClickHouse 库自动加载", (await page.locator("#dictDatabases").innerText()).includes("analytics"));
+await page.click("#dictGenerateBtn");
+await page.waitForFunction(() => Boolean(document.querySelector("#dictBody .prose h1")), null, { timeout: 15000 });
+const clickhouseBody = await page.locator("#dictBody").innerText();
+check("ClickHouse 类型含 Nullable", clickhouseBody.includes("Nullable(String)") && clickhouseBody.includes("Nullable(UInt32)") && clickhouseBody.includes("UUID"));
+check("ClickHouse 用排序键生成 PRIMARY 索引", clickhouseBody.includes("PRIMARY") && clickhouseBody.includes("event_id"));
+check("ClickHouse 无外键时不报警告", !clickhouseBody.includes("外键信息读取失败"), clickhouseBody.slice(0, 200));
+const clickhouseStats = await page.locator("#dictIdentity .identity-meta").innerText();
+check("ClickHouse 统计表数与字段数", /2 张表 · 6 个字段/.test(clickhouseStats), clickhouseStats);
+
 const illegalQueries = dataQueries.filter((query) => (
   !query.connectionId
   || !query.sql
@@ -1330,6 +1704,36 @@ check(
     && scopedQueries.filter((query) => query.connectionId === "pg-main").every((query) => query.database === "appdb")
     && dataQueries.filter((query) => query.connectionId === "sqlite-main").every((query) => query.database === undefined),
   `scoped=${scopedQueries.length}`,
+);
+check(
+  "SQL Server 表级查询指定库",
+  dataQueries.filter((query) => query.connectionId === "sqlserver-main" && !query.sql.includes("sys.databases"))
+    .every((query) => query.database === "appdb"),
+  JSON.stringify(dataQueries.filter((query) => query.connectionId === "sqlserver-main").map((query) => query.database)),
+);
+check(
+  "Oracle 与达梦按 OWNER 过滤且不切换会话库",
+  ["oracle-main", "dameng-main"].every((id) => {
+    const queries = dataQueries.filter((query) => query.connectionId === id);
+    return queries.length > 0
+      && queries.every((query) => query.database === undefined)
+      && queries.filter((query) => !query.sql.includes("all_users")).every((query) => /owner = '/.test(query.sql));
+  }),
+);
+check(
+  "Oracle 与达梦保留当前用户模式",
+  ["oracle-main", "dameng-main"].every((id) => dataQueries.some((query) => (
+    query.connectionId === id && query.sql.includes("FROM all_users") && query.sql.includes("= USER")
+  ))),
+);
+check(
+  "ClickHouse 按库名过滤且不切换会话库",
+  dataQueries.filter((query) => query.connectionId === "clickhouse-main" && !query.sql.includes("system.databases"))
+    .every((query) => query.database === undefined && query.sql.includes("'analytics'")),
+);
+check(
+  "新方言目录查询覆盖",
+  ["sys.tables", "all_tab_columns", "system.columns"].every((needle) => dataQueries.some((query) => query.sql.includes(needle))),
 );
 
 await page.evaluate(() => window.__dbxTest.theme("dark"));

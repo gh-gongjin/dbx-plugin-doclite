@@ -152,6 +152,19 @@ function readZipEntry(buffer, entryName) {
   throw new Error(`zip entry not found: ${entryName}`);
 }
 
+function listZipEntries(buffer) {
+  const names = [];
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    names.push(buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8"));
+    offset = offset + 30 + nameLength + extraLength + size;
+  }
+  return names;
+}
+
 function readAll(client, jobId, kind, chunkSize = 65536) {
   return (async () => {
     let offset = 0;
@@ -615,6 +628,130 @@ async function main() {
     (error) => error.code === "badRequest" && /过期/.test(error.message),
   );
   pass("dictionary docx discarded after save");
+
+  // ---------- Word export for converted documents ----------
+
+  const documentMarkdown = [
+    "# 项目周会纪要", "",
+    "本周完成三个里程碑。", "",
+    "![架构示意图](assets/arch.png)", "",
+    "- 需求评审完成",
+    "- 联调通过", "",
+    "> 下周进入灰度。", "",
+    "| 项目 | 状态 |",
+    "| --- | --- |",
+    "| 转换 | 完成 |", "",
+  ].join("\n");
+
+  async function uploadWord(markdown) {
+    const bytes = Buffer.from(markdown, "utf8");
+    const begin = await client.request("doc/wordBegin", { size: bytes.length });
+    const chunkSize = 256 * 1024;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      const slice = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+      await client.request("doc/wordChunk", { fileId: begin.fileId, offset, dataBase64: slice.toString("base64") });
+    }
+    return begin.fileId;
+  }
+
+  const wordFileId = await uploadWord(documentMarkdown);
+  const wordExport = await client.request("doc/wordCommit", { fileId: wordFileId, title: "项目周会纪要" });
+  assert.equal(wordExport.name, "项目周会纪要.docx");
+  assert.equal(wordExport.path, null, "the in-memory export must not touch the disk");
+  assert.ok(wordExport.fileId && wordExport.size > 0, JSON.stringify(wordExport));
+  const wordParts = [];
+  let wordOffset = 0;
+  for (let guard = 0; guard < 100; guard += 1) {
+    const chunk = await client.request("doc/readWord", { fileId: wordExport.fileId, offset: wordOffset, length: 64 * 1024 });
+    wordParts.push(Buffer.from(chunk.dataBase64, "base64"));
+    wordOffset = chunk.offset + chunk.length;
+    if (chunk.eof) break;
+  }
+  const wordBuffer = Buffer.concat(wordParts);
+  assert.equal(wordBuffer.length, wordExport.size);
+  assert.equal(wordBuffer.subarray(0, 2).toString("latin1"), "PK");
+  const wordEntries = listZipEntries(wordBuffer);
+  for (const part of ["[Content_Types].xml", "word/document.xml", "word/styles.xml", "word/_rels/document.xml.rels"]) {
+    assert.ok(wordEntries.includes(part), `missing part ${part}`);
+  }
+  const wordDocumentXml = readZipEntry(wordBuffer, "word/document.xml").toString("utf8");
+  assert.ok(wordDocumentXml.includes("架构示意图"), "the image alt text must survive");
+  assert.ok(!wordDocumentXml.includes("assets/arch.png"), "the image path must not leak into the document");
+  assert.ok(!wordEntries.some((entry) => entry.startsWith("word/media/")), "images must not be embedded");
+  assert.ok(wordDocumentXml.includes('w:pStyle w:val="Title"'), "the leading heading must use the title style");
+  assert.ok(wordDocumentXml.includes("<w:tbl>") && wordDocumentXml.includes("<w:tblHeader/>"), "tables must keep their header row");
+  assert.ok(wordDocumentXml.includes("• 需求评审完成"), "list items must keep their marker");
+  pass("document docx generated without embedded images", `${wordExport.size} bytes`);
+
+  const wordRoundTrip = await convert(client, "项目周会纪要.docx", {}, wordBuffer);
+  assert.equal(wordRoundTrip.terminal, "doc/done", JSON.stringify(wordRoundTrip.params));
+  const wordPreview = await readAll(client, wordRoundTrip.jobId, "preview");
+  assert.ok(wordPreview.includes("项目周会纪要"), wordPreview.slice(0, 200));
+  assert.ok(wordPreview.includes("架构示意图"), wordPreview.slice(0, 400));
+  pass("document docx opens as a Word document", wordRoundTrip.params.outputs.markdown.name);
+
+  const batchDir = path.join(workDir, "word-batch");
+  const batchFileId = await uploadWord(documentMarkdown);
+  const folderExport = await client.request("doc/wordCommit", { fileId: batchFileId, title: "项目周会纪要", outputDir: batchDir });
+  assert.equal(folderExport.name, "项目周会纪要.docx");
+  assert.ok(folderExport.path && fs.existsSync(folderExport.path), JSON.stringify(folderExport));
+  assert.equal(path.dirname(folderExport.path), batchDir);
+  assert.equal(fs.readFileSync(folderExport.path).subarray(0, 2).toString("latin1"), "PK");
+  const duplicateFileId = await uploadWord(documentMarkdown);
+  const duplicateExport = await client.request("doc/wordCommit", { fileId: duplicateFileId, title: "项目周会纪要", outputDir: batchDir });
+  assert.equal(duplicateExport.name, "项目周会纪要-2.docx");
+  assert.notEqual(duplicateExport.path, folderExport.path);
+  assert.ok(fs.existsSync(duplicateExport.path), duplicateExport.path);
+  pass("word export writes into the picked folder without overwriting", `${folderExport.name}, ${duplicateExport.name}`);
+
+  const sanitizedFileId = await uploadWord(documentMarkdown);
+  const sanitized = await client.request("doc/wordCommit", { fileId: sanitizedFileId, title: "报告/2026:Q1" });
+  assert.equal(sanitized.name, "报告-2026-Q1.docx");
+  pass("word export sanitizes the file name", sanitized.name);
+
+  await assert.rejects(
+    client.request("doc/wordBegin", { size: 0 }),
+    (error) => error.code === "badRequest" && /内容为空/.test(error.message),
+  );
+  await assert.rejects(
+    client.request("doc/wordBegin", { size: 7 * 1024 * 1024 }),
+    (error) => error.code === "badRequest" && /过大/.test(error.message),
+  );
+  const blankFileId = await client.request("doc/wordBegin", { size: 3 });
+  await client.request("doc/wordChunk", { fileId: blankFileId.fileId, offset: 0, dataBase64: Buffer.from("   ").toString("base64") });
+  await assert.rejects(
+    client.request("doc/wordCommit", { fileId: blankFileId.fileId, title: "空文档" }),
+    (error) => error.code === "badRequest" && /内容为空/.test(error.message),
+  );
+  await client.request("doc/discardWord", { fileId: blankFileId.fileId });
+  const outOfOrderWord = await client.request("doc/wordBegin", { size: 10 });
+  await assert.rejects(
+    client.request("doc/wordChunk", { fileId: outOfOrderWord.fileId, offset: 5, dataBase64: Buffer.from("hello").toString("base64") }),
+    (error) => error.code === "badRequest" && /顺序/.test(error.message),
+  );
+  await client.request("doc/discardWord", { fileId: outOfOrderWord.fileId });
+  await assert.rejects(
+    client.request("doc/readWord", { fileId: "../../etc/passwd" }),
+    (error) => error.code === "badRequest",
+  );
+  await assert.rejects(
+    client.request("doc/wordCommit", { fileId: outOfOrderWord.fileId, title: "过期文档" }),
+    (error) => error.code === "badRequest" && /过期/.test(error.message),
+  );
+  const relativeFileId = await uploadWord(documentMarkdown);
+  await assert.rejects(
+    client.request("doc/wordCommit", { fileId: relativeFileId, title: "相对目录", outputDir: "relative/dir" }),
+    (error) => error.code === "badRequest" && /绝对路径/.test(error.message),
+  );
+  await client.request("doc/discardWord", { fileId: relativeFileId });
+  pass("word export rejects empty, oversized, out-of-order and unsafe requests");
+
+  await client.request("doc/discardWord", { fileId: wordExport.fileId });
+  await assert.rejects(
+    client.request("doc/readWord", { fileId: wordExport.fileId }),
+    (error) => error.code === "badRequest" && /过期/.test(error.message),
+  );
+  pass("word export discarded after save");
 
   // ---------- Cloud OCR (mock MinerU + Baidu endpoints) ----------
 
